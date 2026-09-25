@@ -654,7 +654,7 @@ export class DestructionSystem {
     // Per fragment this step: its strongest contact, and its strongest contact with its own stump
     // plus the total force on that stump (a section's weight spreads over many collider pairs).
     type Pair = { force: number; mine: number; other: number };
-    const contacts = new Map<number, { strongest: Pair; own: Pair | null; ownPairs: Pair[] }>();
+    const contacts = new Map<number, { strongest: Pair | null; own: Pair | null; ownPairs: Pair[] }>();
     events.drainContactForceEvents((event) => {
       const c1 = event.collider1();
       const c2 = event.collider2();
@@ -666,12 +666,11 @@ export class DestructionSystem {
         const own = otherOwner?.kind === 'building' && otherOwner.building === owner.building;
         const pair = { force, mine, other };
         let entry = contacts.get(owner.id);
-        if (!entry) contacts.set(owner.id, (entry = { strongest: pair, own: null, ownPairs: [] }));
-        else if (force > entry.strongest.force) entry.strongest = pair;
+        if (!entry) contacts.set(owner.id, (entry = { strongest: null, own: null, ownPairs: [] }));
         if (own) {
           entry.ownPairs.push(pair);
           if (!entry.own || force > entry.own.force) entry.own = pair;
-        }
+        } else if (!entry.strongest || force > entry.strongest.force) entry.strongest = pair;
       }
     });
     for (const [bodyHandle, contact] of contacts) {
@@ -693,10 +692,10 @@ export class DestructionSystem {
           this.crushUnder(fragment, point, energy);
           this.crushLeadingEdge(fragment, body, supports);
         }
-        continue; // no break-up, knock-ons or impact sounds against its own stump
       }
+      // Break-ups, knock-ons and impact sounds come from what else it hit (never its own stump).
+      if (!contact.strongest) continue;
       const other = this.physics.ownerOf(contact.strongest.other);
-      if (other?.kind === 'building' && other.building === fragment.building) continue; // never breaks up on its own stump
       if (!this.fragments.has(bodyHandle)) continue;
       const point = this.contactPoint(contact.strongest.mine, contact.strongest.other) ?? { ...body.translation() };
       if (energy >= this.tuning.motion.impactEnergy) {
