@@ -5,6 +5,8 @@ import { createSkyDome, createSkyEnvironment } from './sky-dome.js';
 import { IslandTerrain } from './island-terrain.js';
 import { createOcean } from './ocean-surface.js';
 import { CitySkyline } from './city-skyline.js';
+import { CityDestruction } from './city-destruction.js';
+import { DustPlumes } from './dust-plumes.js';
 import { CloudField } from './cloud-field.js';
 import { SparkTrails } from './spark-trails.js';
 import { HeroFigure } from './hero-figure.js';
@@ -16,6 +18,7 @@ import { SpeedEffects } from './speed-effects.js';
 import { PostPipeline } from './post-pipeline.js';
 import { FlightAudio } from './flight-audio.js';
 import { HudOverlay } from './hud-overlay.js';
+import { DESTRUCTION } from './flight-tuning.js';
 import { clamp, damp, smoothstep } from './scalar-math.js';
 
 const TEST_MODE = new URLSearchParams(location.search).has('test');
@@ -26,6 +29,8 @@ const QUALITY = COARSE_POINTER
   : { maxPixelRatio: 2, pixelBudget: 3.2e6, shadowSize: 2048, cloudDetail: 2, cloudCount: 150 };
 const SPAWN = { position: new THREE.Vector3(-60, 190, -980), yaw: 0.09 };
 const IDLE_INPUT = Object.freeze({ steerX: 0, steerY: 0, boost: false, brake: false });
+const DOWN = new THREE.Vector3(0, -1, 0);
+const DUST_WIND = new THREE.Vector3(2.2, 0, 0.7);
 const SETTINGS_KEY = 'aloft-settings';
 const HINTS_KEY = 'aloft-hints-seen';
 
@@ -77,9 +82,11 @@ async function boot() {
   const clouds = new CloudField({ detail: QUALITY.cloudDetail, count: QUALITY.cloudCount });
   const ocean = createOcean(terrain.createDepthTexture());
   const sparks = new SparkTrails({ city, terrain, clouds });
+  const dust = new DustPlumes();
+  const destruction = new CityDestruction({ city, dust });
   await nextFrame();
 
-  scene.add(createSkyDome(), terrain.mesh, terrain.trees, ocean.mesh, city.group, clouds.mesh, sparks.group);
+  scene.add(createSkyDome(), terrain.mesh, terrain.trees, ocean.mesh, city.group, clouds.mesh, sparks.group, destruction.group, dust.mesh);
   scene.environment = createSkyEnvironment(renderer);
   scene.environmentIntensity = 0.85;
 
@@ -108,22 +115,26 @@ async function boot() {
     collideSphere: (p, r, n) => city.collideSphere(p, r, n),
     nearestSurface: (p, d) => city.nearestSurface(p, d),
     raycast: (origin, direction, distance) => city.raycast(origin, direction, distance),
+    smash: (collider, point, normal, velocity, impact) => destruction.smash(collider, point, normal, velocity, impact),
   };
   const flight = new FlightModel(world);
   const input = new InputControls(canvas);
   const chase = new ChaseCamera(camera);
-  const effects = new SpeedEffects(scene);
+  const effects = new SpeedEffects(scene, dust);
   const post = new PostPipeline(renderer);
   const audio = new FlightAudio();
 
   // ----- settings -------------------------------------------------------
 
-  const settings = readStored(SETTINGS_KEY, { sensitivity: 1, invertY: false, firstPerson: false, sound: true });
+  const settings = readStored(SETTINGS_KEY, {
+    sensitivity: 1, invertY: false, firstPerson: false, sound: true, showKeys: true, destruction: true,
+  });
   const applySettings = () => {
     input.sensitivity = settings.sensitivity;
     input.invertY = settings.invertY;
     chase.setMode(settings.firstPerson ? 'first' : 'chase');
     audio.setMuted(!settings.sound);
+    destruction.enabled = settings.destruction;
     hud.applySettings(settings);
     writeStored(SETTINGS_KEY, settings);
   };
@@ -139,6 +150,10 @@ async function boot() {
   let time = 0;
   let flash = 0;
   let cloudVeil = 0;
+  let dustVeil = 0;
+  let hitStop = 0;
+  let timeScale = 1;
+  let restarting = false;
   let introTarget = 1;
   let wasBoosting = false;
   let testControls = null;
@@ -148,7 +163,7 @@ async function boot() {
   flight.reset(SPAWN.position, SPAWN.yaw);
   chase.snapTo(flight);
   hero.update(0, flight, IDLE_INPUT);
-  cape.drape(hero.refreshCapeFrame(), new THREE.Vector3(0, -1, 0), flight.forward.clone().negate());
+  cape.drape(hero.refreshCapeFrame(), DOWN, flight.forward.clone().negate());
   hud.setSparks(0, sparks.total);
 
   const markHint = (key) => {
@@ -224,9 +239,55 @@ async function boot() {
     document.activeElement?.blur?.();
   }
 
+  // Back to the start: the city rebuilt, sparks back, hero hovering where it began.
+  function resetWorld() {
+    destruction.reset();
+    dust.clear();
+    effects.clear();
+    sparks.reset();
+    hud.setSparks(0, sparks.total);
+    flight.reset(SPAWN.position, SPAWN.yaw);
+    flight.takeEvents();
+    chase.snapTo(flight);
+    hero.update(0, flight, IDLE_INPUT);
+    cape.drape(hero.refreshCapeFrame(), DOWN, flight.forward.clone().negate());
+    hitStop = 0;
+    timeScale = 1;
+    flash = 0;
+  }
+
+  function restart() {
+    if (state === 'title' || restarting) return;
+    restarting = true;
+    input.setEnabled(false);
+    const finish = () => {
+      resetWorld();
+      state = 'flying';
+      restarting = false;
+      input.setEnabled(true);
+      hud.showFlight();
+      hud.setFade(false);
+      const launchKey = input.device === 'touch' ? 'Hold the right side' : input.device === 'gamepad' ? 'Hold A' : 'Hold click or Space';
+      hud.toast(`Fresh start · ${launchKey} to launch`, 4);
+      document.activeElement?.blur?.();
+    };
+    if (TEST_MODE) {
+      finish();
+      return;
+    }
+    hud.setFade(true);
+    setTimeout(finish, 320);
+  }
+
   hud.on('start', startFlight);
   hud.on('resume', resume);
   hud.on('pause', pause);
+  hud.on('restart', restart);
+  input.on('restart', restart);
+  input.on('toggle-keys', () => {
+    settings.showKeys = !settings.showKeys;
+    applySettings();
+  });
   hud.on('touchButton', (name, pressed) => input.setTouchButton(name, pressed));
   input.on('pause', () => (state === 'flying' ? pause() : resume()));
   input.on('confirm', () => (state === 'title' ? startFlight() : resume()));
@@ -262,8 +323,17 @@ async function boot() {
         break;
       case 'impact':
         effects.onImpact(event.point, event.normal, event.strength);
-        audio.thud(event.strength);
+        if (event.dented) audio.dent(event.strength);
+        else audio.thud(event.strength);
         chase.shake((0.25 + event.strength * 0.5) * motion);
+        break;
+      case 'smash':
+        // A split-second freeze sells the weight of bursting through.
+        hitStop = DESTRUCTION.hitStop * (event.kind === 'topple' ? 1 : 0.5) * motion;
+        audio.smash(event.strength);
+        chase.shake((0.55 + event.strength * 0.4) * motion);
+        chase.kick(7 * motion);
+        flash = 0.1 * motion;
         break;
       case 'splash':
         effects.onSplash(event.point, event.strength);
@@ -295,6 +365,18 @@ async function boot() {
     } else if (event.trailDone) {
       audio.trailComplete(3);
       hud.toast(`Trail complete · ${event.trailsDone} of ${sparks.trails.length}`);
+    }
+  }
+
+  function onDestructionEvent(event) {
+    const motion = REDUCED_MOTION ? 0.35 : 1;
+    const distance = event.position.distanceTo(camera.position);
+    if (event.type === 'collapse') {
+      audio.collapse(distance, event.height);
+      if (event.first) hud.toast('Timber!');
+    } else if (event.type === 'collapse-impact') {
+      audio.collapseImpact(distance, event.height);
+      chase.shake(clamp(0.7 - distance / 900, 0, 0.7) * motion);
     }
   }
 
@@ -367,7 +449,13 @@ async function boot() {
   // ----- the frame -----------------------------------------------------------
 
   function step(dt) {
-    const simDt = state === 'paused' ? 0 : dt;
+    if (hitStop > 0) {
+      hitStop = Math.max(0, hitStop - dt);
+      timeScale = DESTRUCTION.hitStopScale;
+    } else {
+      timeScale = damp(timeScale, 1, 9, dt);
+    }
+    const simDt = state === 'paused' ? 0 : dt * timeScale;
     time += simDt;
     atmosphereUniforms.uTime.value = time;
 
@@ -389,7 +477,7 @@ async function boot() {
     capeMesh.visible = !hideBody;
 
     chase.intro = damp(chase.intro, introTarget, introTarget === 0 ? 1.7 : 3, dt);
-    if (state !== 'paused') chase.update(dt, flight, world);
+    if (state !== 'paused') chase.update(simDt, flight, world);
 
     ocean.follow(camera);
     city.update(time);
@@ -399,16 +487,21 @@ async function boot() {
 
     const projectionScale = drawingSize.y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
     effects.update(simDt, time, { camera, flight, projectionScale });
+    destruction.update(simDt, time, projectionScale);
+    for (const event of destruction.takeEvents()) onDestructionEvent(event);
+    dust.update(simDt, DUST_WIND);
     updateSunShadow();
     updateCoach(simDt, controls);
 
     const motion = REDUCED_MOTION ? 0.3 : 1;
     const heroCloud = clouds.immersion(flight.position);
     cloudVeil = damp(cloudVeil, clouds.immersion(camera.position) * 0.82, 7, dt);
+    dustVeil = damp(dustVeil, dust.active ? dust.densityAt(camera.position) * 0.7 : 0, 5, dt);
     flash = damp(flash, 0, 5, dt);
     const speedBlur = (smoothstep(60, 140, flight.speed) * flight.boostBlend * 0.55 + flight.surfaceRush * 0.18) * motion;
     post.settings.uSpeedBlur.value = speedBlur;
     post.settings.uCloud.value = cloudVeil;
+    post.settings.uDust.value = dustVeil;
     post.settings.uFlash.value = flash;
     post.settings.uTime.value = time;
 
@@ -452,15 +545,19 @@ async function boot() {
       city,
       clouds,
       sparks,
+      destruction,
+      dust,
       camera,
       renderer,
       input,
+      settings,
       get state() {
         return state;
       },
       start: startFlight,
       pause,
       resume,
+      restart,
       setControls(controls) {
         testControls = controls ? { ...IDLE_INPUT, ...controls } : null;
       },

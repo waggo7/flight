@@ -253,6 +253,40 @@ body {
   display: none;
 }
 
+.pause-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.quiet-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.95rem 1.5rem;
+  border: 1px solid var(--ink-ghost);
+  border-radius: 999px;
+  background: rgb(255 246 234 / 0.06);
+  font: 600 0.95rem/1 var(--font-ui);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 200ms, border-color 200ms, transform 200ms var(--ease-out);
+}
+
+.quiet-button:hover {
+  background: rgb(255 246 234 / 0.14);
+  border-color: rgb(255 246 234 / 0.4);
+  transform: translateY(-1px);
+}
+
+.quiet-button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
 .pause-title {
   margin: 0;
   font: italic 300 clamp(3rem, 9vw, 5rem) / 1 var(--font-display);
@@ -583,6 +617,116 @@ input:focus-visible {
   filter: drop-shadow(0 0 6px rgb(255 190 110 / 0.85));
 }
 
+/* ---------- On-screen controls ---------- */
+
+.key-legend {
+  position: absolute;
+  right: calc(var(--gutter) + var(--safe-right));
+  bottom: calc(var(--gutter) + var(--safe-bottom));
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 500ms var(--ease-out), visibility 0s linear 500ms;
+}
+
+.app[data-state='flying'] .key-legend,
+.app[data-state='paused'] .key-legend {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 700ms var(--ease-out) 400ms, visibility 0s;
+}
+
+.app[data-keys='hidden'] .key-legend,
+.app[data-device='touch'] .key-legend {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.key-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 0.34rem 0.7rem;
+}
+
+.key-row {
+  display: contents;
+}
+
+.key-row dt {
+  justify-self: end;
+  font: 700 0.6rem/1 var(--font-ui);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-shadow: var(--text-shadow);
+}
+
+.key-row dd {
+  margin: 0;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.key-row--quiet {
+  opacity: 0.6;
+}
+
+.key-legend kbd,
+.key-reminder kbd {
+  margin: 0;
+  padding: 0.24rem 0.44rem;
+  border: 1px solid rgb(255 246 234 / 0.3);
+  border-radius: 5px;
+  background: rgb(24 18 38 / 0.32);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  font: 600 0.66rem/1 var(--font-ui);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.app[data-device='gamepad'] .key-list[data-for='pointer'],
+.app:not([data-device='gamepad']) .key-list[data-for='gamepad'] {
+  display: none;
+}
+
+.key-reminder {
+  position: absolute;
+  right: calc(var(--gutter) + var(--safe-right));
+  bottom: calc(var(--gutter) + var(--safe-bottom));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  pointer-events: none;
+  font: 700 0.6rem/1 var(--font-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-shadow: var(--text-shadow);
+  opacity: 0;
+  transition: opacity 500ms var(--ease-out);
+}
+
+.app[data-keys='hidden'][data-state='flying']:not([data-device='touch']) .key-reminder {
+  opacity: 0.7;
+}
+
+.fade-veil {
+  position: absolute;
+  inset: 0;
+  background: #120e1c;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+
+.fade-veil.is-active {
+  opacity: 1;
+}
+
 /* ---------- Touch ---------- */
 
 .touch-controls {
@@ -699,6 +843,14 @@ input:focus-visible {
   *::after {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+}
+
+/* Narrow windows: lift hints to the top so they never sit on the key legend. */
+@media (max-width: 980px) {
+  .hint {
+    top: calc(var(--gutter) + var(--safe-top) + 3.4rem);
+    bottom: auto;
   }
 }
 

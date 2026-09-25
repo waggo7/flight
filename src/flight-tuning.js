@@ -37,6 +37,20 @@ export const FLIGHT = {
   maxAltitude: 2400,
   worldRadius: 6000,
   boomSpeedShare: 0.95, // shockwave fires when boosting past this share of boostSpeed
+  smashSpeedKept: 0.74, // share of speed kept when bursting through a building
+};
+
+// How buildings react to being hit. Speeds are the part of the hero's velocity going into the wall.
+export const DESTRUCTION = {
+  dentSpeed: 12, // below this, a hit just glances off
+  breakSpeed: 40, // above this, the tower gives way and the section above topples
+  stumpClearance: 2.6, // the break sits this far below the hero, so they fly clear
+  toppleKick: 0.35, // how hard the impact starts the section tipping
+  releaseAngle: 0.6, // radians of tilt before the section slides off its stump and falls
+  maxFalling: 4, // sections allowed in the air at once
+  debrisCapacity: 900,
+  hitStop: 0.13, // seconds of near-freeze on a big hit
+  hitStopScale: 0.12,
 };
 
 export const CAMERA = {

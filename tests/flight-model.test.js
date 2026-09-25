@@ -9,10 +9,12 @@ const DT = 1 / 60;
 // Open sea at y = 0, optionally with one box-shaped tower.
 function makeWorld({ tower = null } = {}) {
   return {
+    tower,
     groundHeight: () => -40,
     nearestSurface: () => Infinity,
     collideSphere(p, r, normal) {
-      if (!tower) return false;
+      tower = this.tower;
+      if (!tower) return null;
       const q = new THREE.Vector3(
         THREE.MathUtils.clamp(p.x, tower.min.x, tower.max.x),
         THREE.MathUtils.clamp(p.y, tower.min.y, tower.max.y),
@@ -20,10 +22,10 @@ function makeWorld({ tower = null } = {}) {
       );
       const d = p.clone().sub(q);
       const dist = d.length();
-      if (dist >= r || dist === 0) return false;
+      if (dist >= r || dist === 0) return null;
       normal.copy(d).divideScalar(dist);
       p.addScaledVector(normal, r - dist);
-      return true;
+      return tower;
     },
   };
 }
@@ -122,6 +124,49 @@ test('flying into a tower glances off without passing through', () => {
   const inside = p.x > tower.min.x && p.x < tower.max.x && p.z > tower.min.z && p.z < tower.max.z && p.y < tower.max.y;
   assert.ok(!inside, `ended inside the tower at ${p.toArray()}`);
   assert.ok(model.speed >= FLIGHT.minFlightSpeed, 'keeps flying after the hit');
+});
+
+test('a building that gives way lets the hero burst through, keeping most of their speed', () => {
+  const world = makeWorld({ tower: { min: new THREE.Vector3(-20, 0, 60), max: new THREE.Vector3(20, 400, 100) } });
+  const hits = [];
+  world.smash = (collider, point, normal, velocity, impact) => {
+    hits.push(impact);
+    world.tower = null; // the section above is gone
+    return { brokeThrough: true, strength: 1, kind: 'topple' };
+  };
+  const model = new FlightModel(world);
+  model.reset(new THREE.Vector3(0, 100, -300), 0);
+  model.launch();
+  fly(model, 3, { boost: true });
+  assert.equal(hits.length, 0, 'still short of the tower after the run-up');
+  model.takeEvents();
+  const before = model.speed;
+  let smashEvent = null;
+  for (let t = 0; t < 2 && !smashEvent; t += DT) {
+    model.update(DT, { steerX: 0, steerY: 0, boost: true, brake: false });
+    smashEvent = model.takeEvents().find((e) => e.type === 'smash');
+  }
+  assert.ok(smashEvent, 'a smash event is reported');
+  assert.equal(hits.length, 1);
+  assert.ok(Math.abs(model.speed - before * FLIGHT.smashSpeedKept) < 3, `speed ${model.speed} vs ${before}`);
+  fly(model, 1, { boost: true });
+  assert.ok(model.position.z > 100, 'the hero comes out the far side');
+  assert.ok(Math.abs(model.yaw) < 0.05, 'still heading the same way');
+});
+
+test('a building that only dents sends the hero glancing off, marked as a dent', () => {
+  const world = makeWorld({ tower: { min: new THREE.Vector3(-20, 0, 60), max: new THREE.Vector3(20, 400, 100) } });
+  world.smash = () => ({ brokeThrough: false, strength: 0.3, kind: 'dent' });
+  const model = new FlightModel(world);
+  model.reset(new THREE.Vector3(0, 100, 20), 0);
+  model.launch();
+  let impact = null;
+  for (let t = 0; t < 3 && !impact; t += DT) {
+    model.update(DT, { steerX: 0, steerY: 0, boost: false, brake: false });
+    impact = model.takeEvents().find((e) => e.type === 'impact');
+  }
+  assert.ok(impact?.dented, 'the impact is reported as a dent');
+  assert.ok(model.position.z < 60, 'the hero stays outside the building');
 });
 
 test('the world edge turns the hero back toward the city', () => {

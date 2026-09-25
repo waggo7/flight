@@ -172,6 +172,8 @@ export class InputControls {
     if (code === 'Escape' || code === 'KeyP') this.#emit('pause');
     else if (code === 'KeyV' || code === 'KeyC') this.#emit('toggle-view');
     else if (code === 'KeyM') this.#emit('toggle-sound');
+    else if (code === 'KeyR') this.#emit('restart');
+    else if (code === 'KeyH') this.#emit('toggle-keys');
     else if ((code === 'Enter' || code === 'Space') && !this.enabled) {
       if (!(e.target instanceof HTMLButtonElement)) this.#emit('confirm');
     }
@@ -202,6 +204,7 @@ export class InputControls {
 
     const edge = (i) => pressed(i) && !state.previous[i];
     if (edge(3)) this.#emit('toggle-view');
+    if (edge(8)) this.#emit('restart');
     if (edge(9)) this.#emit('pause');
     if (edge(0) && !this.enabled) this.#emit('confirm');
     for (let i = 0; i < pad.buttons.length; i++) state.previous[i] = pressed(i);

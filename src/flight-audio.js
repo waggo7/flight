@@ -11,6 +11,19 @@ const CHORDS = [
   [110.0, 164.81, 277.18, 329.63], // A
 ];
 
+// Soft-clipping curve: turns clean noise bursts into gritty crunches.
+function makeCrunchCurve(amount = 60) {
+  const curve = new Float32Array(1024);
+  for (let i = 0; i < curve.length; i++) {
+    const x = (i * 2) / curve.length - 1;
+    curve[i] = ((3 + amount) * x * 20 * (Math.PI / 180)) / (Math.PI + amount * Math.abs(x));
+  }
+  return curve;
+}
+
+// Distant events get quieter and duller.
+const falloff = (distance) => 1 / (1 + distance / 260);
+
 function makeImpulse(ctx, seconds = 2.8, decay = 3.2) {
   const length = Math.floor(ctx.sampleRate * seconds);
   const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
@@ -154,7 +167,7 @@ export class FlightAudio {
     gainNode.gain.exponentialRampToValueAtTime(0.0001, when + attack + decay);
   }
 
-  #burst(duration, filterType, frequency, q = 0.7) {
+  #burst(duration, filterType, frequency, q = 0.7, when = this.ctx.currentTime) {
     const source = this.ctx.createBufferSource();
     source.buffer = this.noise;
     const filter = this.ctx.createBiquadFilter();
@@ -162,9 +175,10 @@ export class FlightAudio {
     filter.frequency.value = frequency;
     filter.Q.value = q;
     const gain = this.ctx.createGain();
+    gain.gain.value = 0.0001;
     source.connect(filter).connect(gain);
-    source.start(0, Math.random() * 1.2);
-    source.stop(this.ctx.currentTime + duration + 0.05);
+    source.start(when, Math.random() * 1.2);
+    source.stop(when + duration + 0.05);
     return { source, filter, gain };
   }
 
@@ -236,6 +250,94 @@ export class FlightAudio {
     const hit = this.#burst(0.35, 'lowpass', 420);
     hit.gain.connect(this.master);
     this.#envelope(hit.gain, 0.2 + 0.5 * strength, 0.004, 0.28);
+  }
+
+  #crunch(level, duration, frequency = 700, when = this.ctx.currentTime) {
+    const burst = this.#burst(duration + 0.1, 'bandpass', frequency, 0.8, when);
+    const shaper = this.ctx.createWaveShaper();
+    shaper.curve = this.crunchCurve ??= makeCrunchCurve();
+    shaper.oversample = '2x';
+    burst.gain.disconnect();
+    burst.filter.disconnect();
+    burst.filter.connect(shaper).connect(burst.gain);
+    burst.gain.connect(this.master);
+    this.#envelope(burst.gain, level, 0.004, duration, when);
+    return burst.gain;
+  }
+
+  #glassTinkle(count, level) {
+    const ctx = this.ctx;
+    for (let i = 0; i < count; i++) {
+      const when = ctx.currentTime + Math.random() * 0.9;
+      const tink = this.#burst(0.08, 'bandpass', 4200 + Math.random() * 3800, 6, when);
+      tink.gain.connect(this.master);
+      this.#envelope(tink.gain, level * (0.4 + Math.random() * 0.6), 0.002, 0.05 + Math.random() * 0.08, when);
+    }
+  }
+
+  // Bursting through a building: sub hit, distorted crunch, glass, rumble tail.
+  smash(strength = 1) {
+    if (!this.ready) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const sub = Object.assign(ctx.createOscillator(), { type: 'sine' });
+    sub.frequency.setValueAtTime(66, t);
+    sub.frequency.exponentialRampToValueAtTime(28, t + 0.9);
+    const subGain = ctx.createGain();
+    sub.connect(subGain).connect(this.master);
+    this.#envelope(subGain, 0.9, 0.005, 1.2);
+    sub.start(t);
+    sub.stop(t + 1.4);
+    this.#crunch(0.55 + 0.3 * strength, 0.55, 620);
+    this.#crunch(0.3, 0.9, 260, t + 0.05);
+    this.#glassTinkle(14, 0.22);
+    const rumble = this.#burst(2.6, 'lowpass', 160);
+    rumble.gain.connect(this.master);
+    rumble.gain.connect(this.reverb);
+    this.#envelope(rumble.gain, 0.45, 0.05, 2.4);
+  }
+
+  // A scar in a wall: short crunch and a little glass.
+  dent(strength = 0.5) {
+    if (!this.ready) return;
+    this.#crunch(0.25 + 0.35 * strength, 0.3, 900);
+    this.#glassTinkle(Math.round(3 + strength * 6), 0.14);
+  }
+
+  // A tower section tipping and breaking up: a long groaning rumble.
+  collapse(distance = 0, size = 100) {
+    if (!this.ready) return;
+    const level = falloff(distance) * Math.min(1, 0.4 + size / 250);
+    const rumble = this.#burst(5.5, 'lowpass', 120, 0.9);
+    rumble.gain.connect(this.master);
+    rumble.gain.connect(this.reverb);
+    this.#envelope(rumble.gain, 0.55 * level, 0.6, 4.6);
+    const groan = this.#burst(3.5, 'bandpass', 210, 3);
+    groan.filter.frequency.setValueAtTime(260, this.ctx.currentTime);
+    groan.filter.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 3);
+    groan.gain.connect(this.master);
+    this.#envelope(groan.gain, 0.2 * level, 0.4, 2.8);
+  }
+
+  // The section hitting the street.
+  collapseImpact(distance = 0, size = 100) {
+    if (!this.ready) return;
+    const ctx = this.ctx;
+    const level = falloff(distance) * Math.min(1, 0.45 + size / 220);
+    const when = ctx.currentTime + Math.min(0.6, distance / 343); // sound arrives a beat after the sight
+    const boom = Object.assign(ctx.createOscillator(), { type: 'sine' });
+    boom.frequency.setValueAtTime(52, when);
+    boom.frequency.exponentialRampToValueAtTime(24, when + 1.2);
+    const boomGain = ctx.createGain();
+    boom.connect(boomGain).connect(this.master);
+    this.#envelope(boomGain, 0.9 * level, 0.01, 1.6, when);
+    boom.start(when);
+    boom.stop(when + 1.8);
+    this.#crunch(0.45 * level, 0.8, 320, when);
+    const tail = this.#burst(3.5, 'lowpass', 140, 0.7, when);
+    tail.gain.connect(this.master);
+    tail.gain.connect(this.reverb);
+    this.#envelope(tail.gain, 0.5 * level, 0.08, 3.2, when);
   }
 
   splash(strength = 0.5) {

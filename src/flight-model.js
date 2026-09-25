@@ -15,7 +15,9 @@ const sanitizeInput = (input) => ({
 // cruise, boost — with gravity trading altitude for speed in dives and climbs.
 export class FlightModel {
   constructor(world) {
-    this.world = world; // { groundHeight(x, z), collideSphere(p, r, outNormal), nearestSurface(p, maxDist) }
+    // world: { groundHeight(x, z), collideSphere(p, r, outNormal) → collider | null,
+    //         nearestSurface(p, maxDist), smash?(collider, point, normal, velocity, impact) }
+    this.world = world;
     this.position = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
     this.acceleration = new THREE.Vector3();
@@ -217,11 +219,18 @@ export class FlightModel {
       this.groundClearance = radius;
     }
 
-    // Buildings: glance off and slide along, keeping momentum.
+    // Buildings: hit hard enough and the building gives way — burst through, keeping
+    // most of your speed. Otherwise glance off and slide along it.
     const normal = this._normal;
-    if (this.world.collideSphere(p, radius, normal)) {
+    const collider = this.world.collideSphere(p, radius, normal);
+    if (collider) {
       const into = this.velocity.dot(normal);
-      if (into < 0) {
+      const outcome = into < 0 && this.world.smash ? this.world.smash(collider, p, normal, this.velocity, -into) : null;
+      if (outcome?.brokeThrough && this.mode === 'flying') {
+        this.speed = Math.max(FLIGHT.minFlightSpeed, this.speed * FLIGHT.smashSpeedKept);
+        this.yawRate *= 0.5;
+        this.events.push({ type: 'smash', kind: outcome.kind, strength: outcome.strength, point: p.clone(), normal: normal.clone() });
+      } else if (into < 0) {
         this.velocity.addScaledVector(normal, -into * 1.15);
         if (this.mode === 'flying') {
           const slideSpeed = this.velocity.length();
@@ -234,7 +243,9 @@ export class FlightModel {
         }
         if (-into > 6 && this._impactCooldown <= 0) {
           this._impactCooldown = 0.35;
-          this.events.push({ type: 'impact', strength: clamp(-into / 60, 0.1, 1), point: p.clone(), normal: normal.clone() });
+          this.events.push({
+            type: 'impact', strength: clamp(-into / 60, 0.1, 1), point: p.clone(), normal: normal.clone(), dented: outcome?.kind === 'dent',
+          });
         }
       }
     }

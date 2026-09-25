@@ -25,6 +25,15 @@ for (const landmark of Object.values(LANDMARKS)) {
 const GLASS_FRAMES = ['#dcd6cc', '#aab1b9', '#8e7b67', '#ebe5d9', '#5e6670', '#c7c1b6'];
 const STONE_WALLS = ['#cfc0a8', '#baa58c', '#dad0c3', '#a08169', '#90969c', '#c79c7d', '#e3d7c6'];
 const STYLE = { glass: 0, stone: 1, plain: 2 };
+const GLASS_TINTS = ['#1f2a36', '#18302f', '#3a2718', '#2f3136'];
+
+// Scorch marks from impacts, shared by every facade material (ring buffer of world spheres).
+export const DAMAGE_SLOTS = 16;
+export const damageUniform = { value: Array.from({ length: DAMAGE_SLOTS }, () => new THREE.Vector4(0, -1e5, 0, 0)) };
+
+// Roles decide how a piece reacts to a hit: towers topple, podiums and bases only scar,
+// rooftop kit shatters outright.
+const STURDY_ROLES = new Set(['podium', 'base']);
 
 class ColliderGrid {
   constructor(cellSize) {
@@ -92,13 +101,28 @@ export class CitySkyline {
     this.rounds = [];
     this.spires = [];
     this.beacons = [];
+    this.buildings = [];
+    this.colliders = [];
+    this.building = null;
     this.grid = new ColliderGrid(64);
     this.tallest = [];
+    this.damageCursor = 0;
 
     this.#generate();
     this.group = new THREE.Group();
     this.group.name = 'city';
     this.#buildMeshes();
+    this.pristine = Object.fromEntries(Object.entries(this.meshes).map(([kind, mesh]) => [kind, mesh.instanceMatrix.array.slice()]));
+    this.dirty = new Set();
+    this._matrix = new THREE.Matrix4();
+    this._quat = new THREE.Quaternion();
+    this._up = new THREE.Vector3(0, 1, 0);
+  }
+
+  #beginBuilding(x, z) {
+    this.building = { id: this.buildings.length, x, z, pieces: [], colliders: [] };
+    this.buildings.push(this.building);
+    return this.building;
   }
 
   // ----- generation -------------------------------------------------------
@@ -145,11 +169,13 @@ export class CitySkyline {
     if (maxHeight > 150 && random() < 0.82) {
       // Downtown: a podium with a single tower.
       const podium = 9 + random() * 12;
-      this.#addBox(cx, cz, LOT - 4, LOT - 4, ground, podium, STYLE.stone, { wall: STONE_WALLS });
+      this.#beginBuilding(cx, cz);
+      this.#addBox(cx, cz, LOT - 4, LOT - 4, ground, podium, STYLE.stone, { wall: STONE_WALLS }, { role: 'podium' });
       const footprint = 24 + random() * 16;
       const height = maxHeight * (0.72 + random() * 0.45);
       const ox = (random() - 0.5) * (LOT - footprint - 6);
       const oz = (random() - 0.5) * (LOT - footprint - 6);
+      this.#beginBuilding(cx + ox, cz + oz);
       if (random() < 0.12) this.#addRoundTower(cx + ox, cz + oz, footprint * 0.5, ground + podium, height);
       else this.#addTower(cx + ox, cz + oz, footprint, footprint * (0.8 + random() * 0.4), ground + podium, height);
       return;
@@ -167,6 +193,7 @@ export class CitySkyline {
         const height = Math.max(9, maxHeight * Math.pow(0.3 + random() * 0.7, 1.25));
         const w = lotW - 3 - random() * 4;
         const d = lotD - 3 - random() * 4;
+        this.#beginBuilding(x, z);
         if (height > 70 && random() < 0.65) this.#addTower(x, z, w, d, ground, height);
         else {
           this.#addBox(x, z, w, d, ground, height, STYLE.stone, { wall: STONE_WALLS });
@@ -194,15 +221,15 @@ export class CitySkyline {
     }
     if (height > 110 && random() < 0.7) {
       const crown = 3 + random() * 6;
-      this.#addBox(x, z, cw * 0.82, cd * 0.82, y, crown, STYLE.plain, { wall: ['#77736e'] });
+      this.#addBox(x, z, cw * 0.82, cd * 0.82, y, crown, STYLE.plain, { wall: ['#77736e'] }, { role: 'crown' });
       y += crown;
     }
     if (height > 190 && random() < 0.55) {
       const spire = 18 + random() * 40;
-      this.spires.push({ x, z, y, height: spire, radius: 0.8 + random() * 0.5 });
+      this.#addSpire(x, z, y, spire, 0.8 + random() * 0.5);
       y += spire;
     }
-    if (height > 160) this.beacons.push(new THREE.Vector3(x, y + 0.8, z));
+    if (height > 160) this.#addBeacon(x, y + 0.8, z);
     this.tallest.push({ x, z, top: y });
   }
 
@@ -210,8 +237,8 @@ export class CitySkyline {
     const random = this.random;
     const glass = Math.floor(random() * 4);
     this.#addCylinder(x, z, radius, y0, height, STYLE.glass, { wall: GLASS_FRAMES, glass });
-    this.#addCylinder(x, z, radius * 0.78, y0 + height, 5, STYLE.plain, { wall: ['#7a7671'] });
-    this.beacons.push(new THREE.Vector3(x, y0 + height + 6, z));
+    this.#addCylinder(x, z, radius * 0.78, y0 + height, 5, STYLE.plain, { wall: ['#7a7671'] }, { role: 'crown' });
+    this.#addBeacon(x, y0 + height + 6, z);
     this.tallest.push({ x, z, top: y0 + height + 5 });
   }
 
@@ -222,12 +249,12 @@ export class CitySkyline {
       const ud = 3 + random() * Math.min(8, d * 0.35);
       const ox = (random() - 0.5) * (w - uw - 2);
       const oz = (random() - 0.5) * (d - ud - 2);
-      this.#addBox(x + ox, z + oz, uw, ud, top, 2 + random() * 3, STYLE.plain, { wall: ['#6f6c69', '#807a73'] });
+      this.#addBox(x + ox, z + oz, uw, ud, top, 2 + random() * 3, STYLE.plain, { wall: ['#6f6c69', '#807a73'] }, { role: 'roof' });
     }
     if (top < 60 && random() < 0.22) {
       const ox = (random() - 0.5) * (w - 6);
       const oz = (random() - 0.5) * (d - 6);
-      this.#addCylinder(x + ox, z + oz, 1.8, top + 2.5, 4, STYLE.plain, { wall: ['#6b5140'] }, false);
+      this.#addCylinder(x + ox, z + oz, 1.8, top + 2.5, 4, STYLE.plain, { wall: ['#6b5140'] }, { role: 'roof', collide: false });
     }
   }
 
@@ -235,6 +262,7 @@ export class CitySkyline {
     const ground = CITY_ISLAND.ground;
     if (name === 'spire') {
       // A slender stepped tower with a needle — the tallest thing in the city.
+      this.#beginBuilding(cx, cz);
       let y = ground;
       const tiers = 9;
       for (let t = 0; t < tiers; t++) {
@@ -243,10 +271,10 @@ export class CitySkyline {
         this.#addBox(cx, cz, size, size, y, h, STYLE.glass, { wall: ['#e7e1d6'], glass: 3 });
         y += h;
       }
-      this.#addBox(cx, cz, 12, 12, y, 10, STYLE.plain, { wall: ['#8d8983'] });
+      this.#addBox(cx, cz, 12, 12, y, 10, STYLE.plain, { wall: ['#8d8983'] }, { role: 'crown' });
       y += 10;
-      this.spires.push({ x: cx, z: cz, y, height: 74, radius: 1.6 });
-      this.beacons.push(new THREE.Vector3(cx, y + 75, cz));
+      this.#addSpire(cx, cz, y, 74, 1.6);
+      this.#addBeacon(cx, y + 75, cz);
       this.tallest.push({ x: cx, z: cz, top: y + 74 });
       LANDMARKS.spire.top = y + 74;
     } else if (name === 'twist') {
@@ -254,26 +282,30 @@ export class CitySkyline {
       const slabs = 62;
       const slabHeight = 6.8;
       const podium = 8;
-      this.#addBox(cx, cz, LOT - 6, LOT - 6, ground, podium, STYLE.stone, { wall: ['#d6cbbb'] });
+      this.#beginBuilding(cx, cz);
+      this.#addBox(cx, cz, LOT - 6, LOT - 6, ground, podium, STYLE.stone, { wall: ['#d6cbbb'] }, { role: 'base' });
+      this.#beginBuilding(cx, cz);
       for (let s = 0; s < slabs; s++) {
         const yaw = THREE.MathUtils.degToRad(s * 1.55);
-        this.#addBox(cx, cz, 31, 31, ground + podium + s * slabHeight, slabHeight, STYLE.glass, { wall: ['#b9c0c7'], glass: 1 }, yaw, false);
+        this.#addBox(cx, cz, 31, 31, ground + podium + s * slabHeight, slabHeight, STYLE.glass, { wall: ['#b9c0c7'], glass: 1 }, { yaw, collide: false });
       }
       const top = ground + podium + slabs * slabHeight;
-      this.#addCollider({ kind: 'cyl', x: cx, z: cz, radius: 19.5, minY: ground + podium, maxY: top });
-      this.beacons.push(new THREE.Vector3(cx, top + 1, cz));
+      this.#addCollider({ kind: 'cyl', x: cx, z: cz, radius: 19.5, minY: ground + podium, maxY: top, role: 'tower', halfWidth: 16 });
+      this.#addBeacon(cx, top + 1, cz);
       this.tallest.push({ x: cx, z: cz, top });
       LANDMARKS.twist.top = top;
     } else if (name === 'round') {
       const radius = 24;
       const height = 330;
-      this.#addCylinder(cx, cz, radius + 6, ground, 18, STYLE.stone, { wall: ['#d9cfc0'] });
+      this.#beginBuilding(cx, cz);
+      this.#addCylinder(cx, cz, radius + 6, ground, 18, STYLE.stone, { wall: ['#d9cfc0'] }, { role: 'base' });
+      this.#beginBuilding(cx, cz);
       this.#addCylinder(cx, cz, radius, ground + 18, height, STYLE.glass, { wall: ['#c9b89c'], glass: 2 });
-      this.#addCylinder(cx, cz, radius + 2, ground + 18 + height, 5, STYLE.plain, { wall: ['#8b7a62'] });
-      this.#addCylinder(cx, cz, radius * 0.7, ground + 23 + height, 22, STYLE.glass, { wall: ['#c9b89c'], glass: 2 });
+      this.#addCylinder(cx, cz, radius + 2, ground + 18 + height, 5, STYLE.plain, { wall: ['#8b7a62'] }, { role: 'crown' });
+      this.#addCylinder(cx, cz, radius * 0.7, ground + 23 + height, 22, STYLE.glass, { wall: ['#c9b89c'], glass: 2 }, { role: 'crown' });
       const top = ground + 45 + height;
-      this.spires.push({ x: cx, z: cz, y: top, height: 38, radius: 1.2 });
-      this.beacons.push(new THREE.Vector3(cx, top + 39, cz));
+      this.#addSpire(cx, cz, top, 38, 1.2);
+      this.#addBeacon(cx, top + 39, cz);
       this.tallest.push({ x: cx, z: cz, top: top + 38 });
       LANDMARKS.round.top = top + 38;
     }
@@ -283,31 +315,50 @@ export class CitySkyline {
     return list[Math.floor(this.random() * list.length)];
   }
 
-  #addBox(x, z, w, d, y0, h, style, look, yaw = 0, collide = true) {
+  #addBox(x, z, w, d, y0, h, style, look, { yaw = 0, collide = true, role = 'tower' } = {}) {
     const random = this.random;
     const color = look.frameIndex !== undefined ? look.wall[look.frameIndex] : this.#pickColor(look.wall);
+    const index = this.boxes.length;
     this.boxes.push({
-      x, z, w, d, y0, h, yaw, style,
+      x, z, w, d, y0, h, yaw, style, role,
       color,
       glass: look.glass ?? Math.floor(random() * 4),
       seed: random(),
       lit: style === STYLE.stone ? 0.035 + random() * 0.05 : 0.015 + random() * 0.03,
+      building: this.building.id,
     });
+    this.building.pieces.push({ kind: 'box', index });
     if (collide) {
-      this.#addCollider({ kind: 'box', minX: x - w / 2, maxX: x + w / 2, minY: y0, maxY: y0 + h, minZ: z - d / 2, maxZ: z + d / 2 });
+      this.#addCollider({
+        kind: 'box', role, piece: { kind: 'box', index },
+        minX: x - w / 2, maxX: x + w / 2, minY: y0, maxY: y0 + h, minZ: z - d / 2, maxZ: z + d / 2,
+      });
     }
   }
 
-  #addCylinder(x, z, radius, y0, h, style, look, collide = true) {
+  #addCylinder(x, z, radius, y0, h, style, look, { collide = true, role = 'tower' } = {}) {
     const random = this.random;
+    const index = this.rounds.length;
     this.rounds.push({
-      x, z, radius, y0, h, style,
+      x, z, radius, y0, h, style, role,
       color: this.#pickColor(look.wall),
       glass: look.glass ?? Math.floor(random() * 4),
       seed: random(),
       lit: 0.02 + random() * 0.03,
+      building: this.building.id,
     });
-    if (collide) this.#addCollider({ kind: 'cyl', x, z, radius, minY: y0, maxY: y0 + h });
+    this.building.pieces.push({ kind: 'round', index });
+    if (collide) this.#addCollider({ kind: 'cyl', role, piece: { kind: 'round', index }, x, z, radius, minY: y0, maxY: y0 + h });
+  }
+
+  #addSpire(x, z, y, height, radius) {
+    this.building.pieces.push({ kind: 'spire', index: this.spires.length });
+    this.spires.push({ x, z, y, height, radius, building: this.building.id });
+  }
+
+  #addBeacon(x, y, z) {
+    this.building.pieces.push({ kind: 'beacon', index: this.beacons.length });
+    this.beacons.push(new THREE.Vector3(x, y, z));
   }
 
   #addCollider(collider) {
@@ -317,6 +368,12 @@ export class CitySkyline {
       collider.minZ = collider.z - collider.radius;
       collider.maxZ = collider.z + collider.radius;
     }
+    collider.building = this.building.id;
+    collider.sturdy = STURDY_ROLES.has(collider.role);
+    collider.restMaxY = collider.maxY;
+    collider.disabled = false;
+    this.building.colliders.push(collider);
+    this.colliders.push(collider);
     this.grid.insert(collider);
   }
 
@@ -335,6 +392,7 @@ export class CitySkyline {
       return matrix;
     });
     this.group.add(boxMesh);
+    this.meshes = { box: boxMesh };
 
     const roundGeometry = new THREE.CylinderGeometry(1, 1, 1, 48, 1);
     roundGeometry.translate(0, 0.5, 0);
@@ -344,20 +402,18 @@ export class CitySkyline {
       return matrix;
     });
     this.group.add(roundMesh);
+    this.meshes.round = roundMesh;
 
     const spireGeometry = new THREE.ConeGeometry(1, 1, 10, 1);
     spireGeometry.translate(0, 0.5, 0);
-    const spireMaterial = applyAtmosphere(
-      new THREE.MeshStandardMaterial({ color: '#d9d2c6', metalness: 0.9, roughness: 0.28 }),
-      { key: 'spire' },
-    );
-    const spireMesh = new THREE.InstancedMesh(spireGeometry, spireMaterial, this.spires.length);
+    const spireMesh = new THREE.InstancedMesh(spireGeometry, createSpireMaterial(), this.spires.length);
     this.spires.forEach((item, index) => {
       matrix.compose(new THREE.Vector3(item.x, item.y, item.z), rotation.identity(), new THREE.Vector3(item.radius, item.height, item.radius));
       spireMesh.setMatrixAt(index, matrix);
     });
     spireMesh.castShadow = true;
     this.group.add(spireMesh);
+    this.meshes.spire = spireMesh;
 
     // Aviation beacons: tiny, bright, blinking in unison.
     this.beaconMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(8, 0.4, 0.25) });
@@ -367,19 +423,24 @@ export class CitySkyline {
       beaconMesh.setMatrixAt(index, matrix);
     });
     this.group.add(beaconMesh);
+    this.meshes.beacon = beaconMesh;
+    for (const mesh of Object.values(this.meshes)) mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   }
 
   #createInstanced(geometry, material, items, composeMatrix) {
     const mesh = new THREE.InstancedMesh(geometry, material, items.length);
     const facade = new Float32Array(items.length * 4);
+    const base = new Float32Array(items.length);
     const color = new THREE.Color();
     items.forEach((item, index) => {
       mesh.setMatrixAt(index, composeMatrix(item));
       color.set(item.color);
       mesh.setColorAt(index, color);
       facade.set([item.style, item.seed, item.glass, item.lit], index * 4);
+      base[index] = item.y0;
     });
     geometry.setAttribute('aFacade', new THREE.InstancedBufferAttribute(facade, 4));
+    geometry.setAttribute('aFacadeBase', new THREE.InstancedBufferAttribute(base, 1));
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.computeBoundingSphere();
@@ -393,11 +454,15 @@ export class CitySkyline {
 
   // ----- queries ----------------------------------------------------------
 
+  // Pushes the sphere out of any building it overlaps. Returns the collider it hit
+  // deepest (so callers can damage it), or null.
   collideSphere(position, radius, outNormal) {
-    let hit = false;
+    let deepest = null;
+    let deepestPenetration = -Infinity;
     outNormal.set(0, 0, 0);
     for (let pass = 0; pass < 2; pass++) {
       this.grid.forEachNear(position.x - radius, position.z - radius, position.x + radius, position.z + radius, (collider) => {
+        if (collider.disabled) return;
         if (position.y - radius > collider.maxY || position.y + radius < collider.minY) return;
         closestPointOn(collider, position, closest);
         const dx = position.x - closest.x;
@@ -405,7 +470,11 @@ export class CitySkyline {
         const dz = position.z - closest.z;
         const distSq = dx * dx + dy * dy + dz * dz;
         if (distSq >= radius * radius) return;
-        hit = true;
+        const penetration = radius - Math.sqrt(distSq);
+        if (penetration > deepestPenetration) {
+          deepestPenetration = penetration;
+          deepest = collider;
+        }
         if (distSq > 1e-8) {
           const dist = Math.sqrt(distSq);
           const push = (radius - dist) / dist;
@@ -420,11 +489,11 @@ export class CitySkyline {
         }
       });
     }
-    if (hit) {
+    if (deepest) {
       if (outNormal.lengthSq() < 1e-8) outNormal.set(0, 1, 0);
       outNormal.normalize();
     }
-    return hit;
+    return deepest;
   }
 
   #exitFromInside(collider, position, radius, outNormal) {
@@ -466,6 +535,7 @@ export class CitySkyline {
   nearestSurface(position, maxDistance) {
     let best = Infinity;
     this.grid.forEachNear(position.x - maxDistance, position.z - maxDistance, position.x + maxDistance, position.z + maxDistance, (collider) => {
+      if (collider.disabled) return;
       if (position.y - maxDistance > collider.maxY || position.y + maxDistance < collider.minY) return;
       closestPointOn(collider, position, closest);
       best = Math.min(best, closest.distanceTo(position));
@@ -481,6 +551,7 @@ export class CitySkyline {
       Math.min(origin.x, end.x) - 1, Math.min(origin.z, end.z) - 1,
       Math.max(origin.x, end.x) + 1, Math.max(origin.z, end.z) + 1,
       (collider) => {
+        if (collider.disabled) return;
         const hit = rayBox(origin, direction, collider);
         if (hit >= 0 && hit < best) best = hit;
       },
@@ -490,6 +561,108 @@ export class CitySkyline {
 
   isClear(position, radius) {
     return this.nearestSurface(position, radius) >= radius;
+  }
+
+  // Highest surface under (x, z) at or below `belowY`: ground, or a rooftop to land on.
+  floorAt(x, z, belowY = Infinity, ignoreBuilding = -1) {
+    let floor = Math.max(this.terrain.heightAt(x, z), 0);
+    this.grid.forEachNear(x, z, x, z, (collider) => {
+      if (collider.disabled || collider.building === ignoreBuilding) return;
+      if (collider.maxY > belowY + 0.5 || collider.maxY <= floor) return;
+      const inside = collider.kind === 'box'
+        ? x >= collider.minX && x <= collider.maxX && z >= collider.minZ && z <= collider.maxZ
+        : Math.hypot(x - collider.x, z - collider.z) <= collider.radius;
+      if (inside) floor = collider.maxY;
+    });
+    return floor;
+  }
+
+  // ----- damage -------------------------------------------------------------
+
+  pieceSpan({ kind, index }) {
+    if (kind === 'box') return { bottom: this.boxes[index].y0, top: this.boxes[index].y0 + this.boxes[index].h };
+    if (kind === 'round') return { bottom: this.rounds[index].y0, top: this.rounds[index].y0 + this.rounds[index].h };
+    if (kind === 'spire') return { bottom: this.spires[index].y, top: this.spires[index].y + this.spires[index].height };
+    return { bottom: this.beacons[index].y, top: this.beacons[index].y };
+  }
+
+  pieceData({ kind, index }) {
+    if (kind === 'box') return this.boxes[index];
+    if (kind === 'round') return this.rounds[index];
+    if (kind === 'spire') return this.spires[index];
+    return null;
+  }
+
+  // World matrix of a piece clipped to [bottom, top] (the whole piece by default).
+  pieceMatrix(ref, out, bottom, top) {
+    const data = this.pieceData(ref);
+    const span = this.pieceSpan(ref);
+    const y0 = bottom ?? span.bottom;
+    const y1 = top ?? span.top;
+    if (ref.kind === 'box') {
+      this._quat.setFromAxisAngle(this._up, data.yaw);
+      return out.compose(new THREE.Vector3(data.x, y0, data.z), this._quat, new THREE.Vector3(data.w, y1 - y0, data.d));
+    }
+    this._quat.identity();
+    if (ref.kind === 'round') return out.compose(new THREE.Vector3(data.x, y0, data.z), this._quat, new THREE.Vector3(data.radius, y1 - y0, data.radius));
+    return out.compose(new THREE.Vector3(data.x, data.y, data.z), this._quat, new THREE.Vector3(data.radius, data.height, data.radius));
+  }
+
+  // Shorten a piece so it ends at `top` (the stump left behind by a break).
+  setPieceTop(ref, top) {
+    const mesh = this.meshes[ref.kind];
+    mesh.setMatrixAt(ref.index, this.pieceMatrix(ref, this._matrix, undefined, top));
+    this.dirty.add(ref.kind);
+  }
+
+  hidePiece(ref) {
+    this.meshes[ref.kind].setMatrixAt(ref.index, this._matrix.makeScale(0, 0, 0));
+    this.dirty.add(ref.kind);
+  }
+
+  // A building gives way at `height`: colliders above vanish, the one it cuts gets shorter.
+  cutBuilding(buildingId, height) {
+    for (const collider of this.buildings[buildingId].colliders) {
+      if (collider.minY >= height - 0.01) collider.disabled = true;
+      else if (collider.maxY > height) collider.maxY = height;
+    }
+  }
+
+  removeCollider(collider) {
+    collider.disabled = true;
+  }
+
+  addDamage(center, radius) {
+    damageUniform.value[this.damageCursor].set(center.x, center.y, center.z, radius);
+    this.damageCursor = (this.damageCursor + 1) % DAMAGE_SLOTS;
+  }
+
+  // Colour to paint debris from a collider's building.
+  lookOf(collider) {
+    const data = collider.piece ? this.pieceData(collider.piece) : this.boxes.find((b) => b.building === collider.building);
+    const wall = new THREE.Color(data?.color ?? '#9a948c');
+    const glassy = data?.style === STYLE.glass;
+    return { wall, glass: new THREE.Color(GLASS_TINTS[data?.glass ?? 0]), glassy };
+  }
+
+  // Push pending instance edits to the GPU; call once per frame.
+  flushChanges() {
+    for (const kind of this.dirty) this.meshes[kind].instanceMatrix.needsUpdate = true;
+    this.dirty.clear();
+  }
+
+  restore() {
+    for (const [kind, matrices] of Object.entries(this.pristine)) {
+      this.meshes[kind].instanceMatrix.array.set(matrices);
+      this.meshes[kind].instanceMatrix.needsUpdate = true;
+    }
+    for (const collider of this.colliders) {
+      collider.disabled = false;
+      collider.maxY = collider.restMaxY;
+    }
+    for (const slot of damageUniform.value) slot.set(0, -1e5, 0, 0);
+    this.damageCursor = 0;
+    this.dirty.clear();
   }
 }
 
@@ -516,21 +689,41 @@ function rayBox(origin, direction, c) {
   return tMin;
 }
 
-function createFacadeMaterial(round) {
-  const material = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0, envMapIntensity: 1 });
-  return applyAtmosphere(material, { key: round ? 'facade-round' : 'facade-box', patch: (shader) => patchFacade(shader, round) });
+export function createSpireMaterial() {
+  return applyAtmosphere(new THREE.MeshStandardMaterial({ color: '#d9d2c6', metalness: 0.9, roughness: 0.28 }), { key: 'spire' });
+}
+
+// Facade material for instanced towers. `falling` pieces crumble away (dissolve) and
+// show a dark gutted interior through the gaps.
+export function createFacadeMaterial(round, { falling = false } = {}) {
+  const material = new THREE.MeshStandardMaterial({
+    roughness: 0.8,
+    metalness: 0,
+    envMapIntensity: 1,
+    side: falling ? THREE.DoubleSide : THREE.FrontSide,
+  });
+  if (falling) material.defines = { FACADE_FALLING: '' };
+  const key = `facade-${round ? 'round' : 'box'}${falling ? '-falling' : ''}`;
+  return applyAtmosphere(material, { key, patch: (shader) => patchFacade(shader, round) });
 }
 
 function patchFacade(shader, round) {
+  shader.uniforms.uDamage = damageUniform;
   shader.vertexShader = shader.vertexShader
     .replace(
       '#include <common>',
       `#include <common>
       attribute vec4 aFacade;
+      attribute float aFacadeBase;
       flat varying vec4 vFacade;
       varying vec3 vFacadeLocal;
       varying vec3 vFacadeNormal;
-      varying vec2 vFacadeSpan;`,
+      varying vec2 vFacadeSpan;
+      varying float vFacadeBase;
+      #ifdef FACADE_FALLING
+        attribute float aCrumble;
+        flat varying float vCrumble;
+      #endif`,
     )
     .replace(
       '#include <begin_vertex>',
@@ -539,9 +732,13 @@ function patchFacade(shader, round) {
       vFacadeLocal = position * facadeScale;
       vFacadeNormal = normal;
       vFacade = aFacade;
+      vFacadeBase = aFacadeBase;
       vFacadeSpan = abs(normal.x) > 0.5
         ? vec2((position.z + 0.5) * facadeScale.z, facadeScale.z)
-        : vec2((position.x + 0.5) * facadeScale.x, facadeScale.x);`,
+        : vec2((position.x + 0.5) * facadeScale.x, facadeScale.x);
+      #ifdef FACADE_FALLING
+        vCrumble = aCrumble;
+      #endif`,
     );
 
   shader.fragmentShader = shader.fragmentShader
@@ -549,14 +746,27 @@ function patchFacade(shader, round) {
       '#include <common>',
       `#include <common>
       ${NOISE_GLSL}
+      uniform vec4 uDamage[${DAMAGE_SLOTS}];
       flat varying vec4 vFacade;
       varying vec3 vFacadeLocal;
       varying vec3 vFacadeNormal;
-      varying vec2 vFacadeSpan;`,
+      varying vec2 vFacadeSpan;
+      varying float vFacadeBase;
+      #ifdef FACADE_FALLING
+        flat varying float vCrumble;
+      #endif`,
     )
     .replace(
       '#include <color_fragment>',
       `#include <color_fragment>
+      #ifdef FACADE_FALLING
+        float crumbleNoise = valueNoise(vFacadeLocal.xz * 0.3 + vFacadeLocal.y * 0.09) * 0.6 + valueNoise(vFacadeLocal.zy * 0.8 + 3.1) * 0.4;
+        float crumbleFront = vCrumble * 1.35 - 0.2;
+        if (crumbleNoise < crumbleFront) discard;
+        // Cut the section away around the camera so bursting through never blacks out the view.
+        if (distance(vAerialWorld, cameraPosition) < 15.0 + (crumbleNoise - 0.5) * 6.0) discard;
+        float charredEdge = 1.0 - smoothstep(crumbleFront, crumbleFront + 0.07, crumbleNoise);
+      #endif
       float glassStyle = 1.0 - step(0.5, vFacade.x);
       float plainStyle = step(1.5, vFacade.x);
       vec3 facadeN = normalize(vFacadeNormal);
@@ -568,7 +778,8 @@ function patchFacade(shader, round) {
            float cellU = (atan(vFacadeLocal.z, vFacadeLocal.x) / 6.2831853 + 0.5) * columns;`
         : `float columns = max(floor(vFacadeSpan.y / cellWidth), 1.0);
            float cellU = vFacadeSpan.x / vFacadeSpan.y * columns;`}
-      float cellV = vAerialWorld.y / mix(3.7, 3.45, glassStyle);
+      float facadeHeight = vFacadeLocal.y + vFacadeBase;
+      float cellV = facadeHeight / mix(3.7, 3.45, glassStyle);
       vec2 cell = vec2(cellU, cellV);
       vec2 cellId = floor(cell);
       vec2 cellF = fract(cell);
@@ -581,14 +792,44 @@ function patchFacade(shader, round) {
       float paneAverage = (paneHi.x - paneLo.x) * (paneHi.y - paneLo.y);
       float farBlend = smoothstep(0.3, 0.85, max(cellFw.x, cellFw.y));
       pane = mix(pane, paneAverage, farBlend) * wall * (1.0 - plainStyle);
+
+      // Scorch and blown-out windows around impacts.
+      float scorch = 0.0;
+      #ifndef FACADE_FALLING
+        for (int i = 0; i < ${DAMAGE_SLOTS}; i++) {
+          vec4 damage = uDamage[i];
+          if (damage.w <= 0.0) continue;
+          float reach = length(vAerialWorld - damage.xyz) / damage.w;
+          if (reach > 1.4) continue;
+          float jag = valueNoise(vAerialWorld.xz * 0.23 + vAerialWorld.y * 0.19 + float(i) * 7.3);
+          scorch = max(scorch, 1.0 - smoothstep(0.4, 1.05, reach + (jag - 0.5) * 0.6));
+        }
+      #endif
+      pane *= 1.0 - smoothstep(0.15, 0.55, scorch);
+
       float windowLit = step(hash12(cellId + floor(vFacade.y * 997.0)), vFacade.w) * pane * (1.0 - farBlend * 0.8);
       vec3 glassTint = vFacade.z < 0.5 ? vec3(0.1, 0.15, 0.22)
         : vFacade.z < 1.5 ? vec3(0.07, 0.15, 0.16)
         : vFacade.z < 2.5 ? vec3(0.21, 0.13, 0.08)
         : vec3(0.17, 0.18, 0.2);
       diffuseColor.rgb = mix(diffuseColor.rgb, glassTint, pane);
+
+      // Weathering: rain streaks down the walls, soot at street level, patchy roofs.
+      float streaks = valueNoise(vec2(cellU * 0.45 + vFacade.y * 31.0, facadeHeight * 0.035));
+      float grime = wall * smoothstep(0.45, 0.95, streaks) * 0.16 * (1.0 - farBlend * 0.5);
+      grime += (1.0 - wall) * valueNoise(vFacadeLocal.xz * 0.12 + vFacade.y * 9.0) * 0.18;
+      diffuseColor.rgb *= 1.0 - grime;
       diffuseColor.rgb *= mix(0.48, 1.0, smoothstep(4.0, 48.0, vAerialWorld.y));
-      diffuseColor.rgb *= mix(0.72, 1.0, wall);`,
+      diffuseColor.rgb *= mix(0.72, 1.0, wall);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.045, 0.04, 0.036), scorch * 0.9);
+      #ifdef FACADE_FALLING
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.04, 0.035, 0.03), charredEdge);
+        if (!gl_FrontFacing) {
+          diffuseColor.rgb = vec3(0.03, 0.028, 0.026);
+          pane = 0.0;
+          windowLit = 0.0;
+        }
+      #endif`,
     )
     .replace(
       '#include <roughnessmap_fragment>',

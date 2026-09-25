@@ -76,7 +76,10 @@
 
       <section id="pause-screen" class="screen screen--pause" aria-labelledby="pause-title" hidden>
         <h2 id="pause-title" class="pause-title">Paused</h2>
-        <button id="resume-button" class="primary-button" type="button">Resume</button>
+        <div class="pause-actions">
+          <button id="resume-button" class="primary-button" type="button">Resume</button>
+          <button id="restart-button" class="quiet-button" type="button">Restart <kbd>R</kbd></button>
+        </div>
         <form class="settings" onsubmit="return false">
           <label class="setting">
             <span>Steering sensitivity</span>
@@ -94,8 +97,39 @@
             <span>Sound <kbd>M</kbd></span>
             <input id="setting-sound" type="checkbox" checked />
           </label>
+          <label class="setting setting--toggle">
+            <span>Show controls on screen <kbd>H</kbd></span>
+            <input id="setting-keys" type="checkbox" checked />
+          </label>
+          <label class="setting setting--toggle">
+            <span>Buildings can break</span>
+            <input id="setting-destruction" type="checkbox" checked />
+          </label>
         </form>
       </section>
+
+      <aside id="key-legend" class="key-legend" aria-label="Controls">
+        <dl class="key-list" data-for="pointer">
+          <div class="key-row"><dt>Steer</dt><dd><kbd>Mouse</kbd><kbd>WASD</kbd></dd></div>
+          <div class="key-row"><dt>Boost</dt><dd><kbd>Click</kbd><kbd>Space</kbd></dd></div>
+          <div class="key-row"><dt>Hover</dt><dd><kbd>Right-click</kbd><kbd>Shift</kbd></dd></div>
+          <div class="key-row"><dt>View</dt><dd><kbd>V</kbd></dd></div>
+          <div class="key-row"><dt>Restart</dt><dd><kbd>R</kbd></dd></div>
+          <div class="key-row"><dt>Pause</dt><dd><kbd>Esc</kbd></dd></div>
+          <div class="key-row key-row--quiet"><dt>Hide keys</dt><dd><kbd>H</kbd></dd></div>
+        </dl>
+        <dl class="key-list" data-for="gamepad">
+          <div class="key-row"><dt>Steer</dt><dd><kbd>Left stick</kbd></dd></div>
+          <div class="key-row"><dt>Boost</dt><dd><kbd>A</kbd><kbd>RT</kbd></dd></div>
+          <div class="key-row"><dt>Hover</dt><dd><kbd>B</kbd><kbd>LT</kbd></dd></div>
+          <div class="key-row"><dt>View</dt><dd><kbd>Y</kbd></dd></div>
+          <div class="key-row"><dt>Restart</dt><dd><kbd>Back</kbd></dd></div>
+          <div class="key-row"><dt>Pause</dt><dd><kbd>Start</kbd></dd></div>
+        </dl>
+      </aside>
+      <p id="key-reminder" class="key-reminder"><kbd>H</kbd> Show keys</p>
+
+      <div id="fade-veil" class="fade-veil" aria-hidden="true"></div>
     </div>
     <script type="module" src="./src/main.js"></script>
   </body>

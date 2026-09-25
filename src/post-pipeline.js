@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-// HDR scene → mip-chain bloom → one composite pass (edge speed blur, cloud white-out,
-// vignette, ACES tone mapping, sRGB, dither). Small, fast, and tuned for sunsets.
+// HDR scene → mip-chain bloom → one composite pass (edge speed blur, dust and cloud veils,
+// vignette, ACES tone mapping, sRGB, contrast, film grain). Small, fast, tuned for sunsets.
 
 const fullscreenVertex = /* glsl */ `
 varying vec2 vUv;
@@ -76,6 +76,10 @@ uniform float uSpeedBlur;
 uniform float uVignette;
 uniform float uCloud;
 uniform vec3 uCloudColor;
+uniform float uDust;
+uniform vec3 uDustColor;
+uniform float uGrain;
+uniform float uContrast;
 uniform float uFlash;
 uniform float uTime;
 varying vec2 vUv;
@@ -134,6 +138,7 @@ void main() {
   }
 
   color += texture2D(tBloom, uv).rgb * uBloomStrength;
+  color = mix(color, uDustColor, uDust);
   color = mix(color, uCloudColor, uCloud);
   color += vec3(uFlash);
   color *= uExposure;
@@ -143,7 +148,11 @@ void main() {
   color *= mix(1.0 - uVignette, 1.0, vignette);
 
   color = toSRGB(acesFilmic(color));
-  color += (hash(gl_FragCoord.xy + fract(uTime * 7.1) * 91.0) - 0.5) / 255.0;
+  // A little grit: a gentle S-curve for bite, and film grain that lives in the mid-tones.
+  color = mix(color, color * color * (3.0 - 2.0 * color), uContrast);
+  float luma = dot(color, vec3(0.299, 0.587, 0.114));
+  float grain = hash(gl_FragCoord.xy + fract(uTime * 7.1) * 91.0) - 0.5;
+  color += grain * (uGrain * (0.35 + 0.65 * (1.0 - abs(luma * 2.0 - 1.0))) + 1.0 / 255.0);
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -193,9 +202,13 @@ export class PostPipeline {
       uBloomStrength: { value: 0.75 },
       uExposure: { value: 1 },
       uSpeedBlur: { value: 0 },
-      uVignette: { value: 0.32 },
+      uVignette: { value: 0.36 },
       uCloud: { value: 0 },
       uCloudColor: { value: new THREE.Color('#f3e2da') },
+      uDust: { value: 0 },
+      uDustColor: { value: new THREE.Color('#9d8c7a') },
+      uGrain: { value: 0.045 },
+      uContrast: { value: 0.16 },
       uFlash: { value: 0 },
       uTime: { value: 0 },
     });

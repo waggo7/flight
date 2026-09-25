@@ -14,6 +14,8 @@ export class HudOverlay {
     this.hud = $('hud');
     this.startButton = $('start-button');
     this.resumeButton = $('resume-button');
+    this.restartButton = $('restart-button');
+    this.fadeVeil = $('fade-veil');
     this.pauseButton = $('pause-button');
     this.loadingNote = $('loading-note');
     this.speedValue = $('speed-value');
@@ -37,6 +39,8 @@ export class HudOverlay {
       invertY: $('setting-invert'),
       firstPerson: $('setting-first-person'),
       sound: $('setting-sound'),
+      showKeys: $('setting-keys'),
+      destruction: $('setting-destruction'),
     };
     this.handlers = {};
     this.readoutTimer = 0;
@@ -48,9 +52,12 @@ export class HudOverlay {
 
     this.startButton.addEventListener('click', () => this.handlers.start?.());
     this.resumeButton.addEventListener('click', () => this.handlers.resume?.());
+    this.restartButton.addEventListener('click', () => this.handlers.restart?.());
     this.pauseButton.addEventListener('click', () => this.handlers.pause?.());
     this.fields.sensitivity.addEventListener('input', () => this.#emitSettings());
-    for (const key of ['invertY', 'firstPerson', 'sound']) this.fields[key].addEventListener('change', () => this.#emitSettings());
+    for (const key of ['invertY', 'firstPerson', 'sound', 'showKeys', 'destruction']) {
+      this.fields[key].addEventListener('change', () => this.#emitSettings());
+    }
 
     const hold = (element, name) => {
       const set = (pressed) => (event) => {
@@ -84,6 +91,8 @@ export class HudOverlay {
       invertY: this.fields.invertY.checked,
       firstPerson: this.fields.firstPerson.checked,
       sound: this.fields.sound.checked,
+      showKeys: this.fields.showKeys.checked,
+      destruction: this.fields.destruction.checked,
     };
   }
 
@@ -92,6 +101,13 @@ export class HudOverlay {
     this.fields.invertY.checked = settings.invertY;
     this.fields.firstPerson.checked = settings.firstPerson;
     this.fields.sound.checked = settings.sound;
+    this.fields.showKeys.checked = settings.showKeys;
+    this.fields.destruction.checked = settings.destruction;
+    this.app.dataset.keys = settings.showKeys ? 'shown' : 'hidden';
+  }
+
+  setFade(active) {
+    this.fadeVeil.classList.toggle('is-active', active);
   }
 
   setLoading(text) {
