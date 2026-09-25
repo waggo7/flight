@@ -15,7 +15,8 @@
     "conformance:write": "tsx scripts/conformance-write.ts",
     "godot:sync": "tsx scripts/godot-sync.ts",
     "godot:check": "tsx scripts/godot-check.ts",
-    "e2e": "tsx scripts/screenshots.ts"
+    "e2e": "tsx scripts/screenshots.ts",
+    "look-parity": "tsx scripts/look-parity.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.20.0",

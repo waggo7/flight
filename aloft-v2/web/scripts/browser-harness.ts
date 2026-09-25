@@ -64,6 +64,9 @@ export async function openPage(url: string, viewport: Viewport): Promise<Harness
       ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true }
       : { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 },
   );
+  // tsx (esbuild keepNames) wraps named functions in page.evaluate bodies with __name(); give the
+  // page a no-op one. A string, so it isn't transformed itself.
+  await context.addInitScript('window.__name = (fn) => fn;');
   // Chromium doesn't trust the egress proxy's CA; Node does. Fetch fonts in Node and hand them over.
   await context.route(/fonts\.(googleapis|gstatic)\.com/, async (route) => {
     try {
@@ -84,4 +87,53 @@ export async function openPage(url: string, viewport: Viewport): Promise<Harness
   });
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
   return { browser, context, page, errors };
+}
+
+/**
+ * Share of pixels that differ between two PNG data URLs (colour distance above `threshold`, 0..1),
+ * compared at 1/`downscale` resolution, plus a diff image with the differing pixels in red.
+ */
+export async function compareImages(page: Page, a: string, b: string, { downscale = 4, threshold = 0.12 } = {}): Promise<{ share: number; diff: string }> {
+  return page.evaluate(
+    async ([first, second, threshold, scale]) => {
+      const load = (src: string): Promise<HTMLImageElement> =>
+        new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = src;
+        });
+      const [imageA, imageB] = await Promise.all([load(first as string), load(second as string)]);
+      const width = Math.round(imageA.width / (scale as number));
+      const height = Math.round(imageA.height / (scale as number));
+      const pixels = (image: HTMLImageElement): Uint8ClampedArray => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d')!;
+        context.drawImage(image, 0, 0, width, height);
+        return context.getImageData(0, 0, width, height).data;
+      };
+      const pa = pixels(imageA);
+      const pb = pixels(imageB);
+      const diffCanvas = document.createElement('canvas');
+      diffCanvas.width = width;
+      diffCanvas.height = height;
+      const diffContext = diffCanvas.getContext('2d')!;
+      const diff = diffContext.createImageData(width, height);
+      let different = 0;
+      for (let i = 0; i < pa.length; i += 4) {
+        const distance = Math.hypot(pa[i]! - pb[i]!, pa[i + 1]! - pb[i + 1]!, pa[i + 2]! - pb[i + 2]!) / 441.7;
+        const off = distance > (threshold as number);
+        if (off) different++;
+        diff.data[i] = off ? 255 : pa[i]! * 0.25;
+        diff.data[i + 1] = off ? 40 : pa[i + 1]! * 0.25;
+        diff.data[i + 2] = off ? 40 : pa[i + 2]! * 0.25;
+        diff.data[i + 3] = 255;
+      }
+      diffContext.putImageData(diff, 0, 0);
+      return { share: different / (width * height), diff: diffCanvas.toDataURL('image/png') };
+    },
+    [a, b, threshold, downscale] as const,
+  );
 }

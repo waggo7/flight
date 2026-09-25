@@ -1,7 +1,10 @@
+import { Vector3 } from 'three';
 import type { FlightControls } from '../core/flight-model';
 import type { Feature } from '../engine/game-context';
 import type { GameLoop } from '../engine/game-loop';
+import { splitBoxIntoChunks } from '../present/render/city/chunk-instances';
 import { CameraToken } from './camera-feature';
+import { CityToken } from './city-feature';
 import { ControlsToken } from './controls-feature';
 import { FlightToken } from './flight-feature';
 import { GameFlowToken } from './game-flow-feature';
@@ -11,12 +14,23 @@ import { SceneToken } from './scene-feature';
 //   __aloft.start(); __aloft.setControls({ boost: true }); __aloft.advance(120);
 // advance() draws only its last frame, so long runs stay fast under software rendering.
 
+export interface TestPose {
+  position: [number, number, number];
+  yaw: number;
+  pitch?: number;
+  speed?: number;
+}
+
 export interface TestApi {
   start(): void;
   restart(): void;
   setControls(controls: Partial<FlightControls> | null): void;
   advance(frames?: number, dt?: number): void;
+  /** Place the hero mid-flight and snap the camera behind it. */
+  pose(pose: TestPose): void;
   render(): void;
+  /** Swap every tower piece within `radius` m (ground plane) of a point for its chunks; returns how many. */
+  chunkify(x: number, z: number, radius: number): number;
   readonly state: string;
   readonly snapshot: Record<string, unknown>;
 }
@@ -37,6 +51,7 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
       const flight = ctx.services.require(FlightToken);
       const flow = ctx.services.require(GameFlowToken);
       const rig = ctx.services.require(CameraToken);
+      const city = ctx.services.require(CityToken);
       window.__aloft = {
         start: () => flow.start(),
         restart: () => flow.restart(),
@@ -50,8 +65,20 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
           }
           scene.renderEnabled = true;
         },
+        pose({ position, yaw, pitch = 0, speed = 40 }) {
+          flight.place(new Vector3(...position), yaw, pitch, speed);
+          rig.snapTo(flight.view);
+        },
         render() {
-          scene.renderer.render(scene.scene, scene.camera);
+          scene.draw();
+        },
+        chunkify(x, z, radius) {
+          let count = 0;
+          city.blueprint.boxes.forEach((piece, index) => {
+            if (piece.role !== 'tower' || Math.hypot(piece.x - x, piece.z - z) > radius) return;
+            if (city.meshes.replaceWithChunks(index, splitBoxIntoChunks(piece))) count++;
+          });
+          return count;
         },
         get state() {
           return flow.state;
@@ -68,6 +95,7 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
             simTime: ctx.loop.simTime,
             steps: ctx.loop.stepCount,
             view: rig.mode,
+            colliders: city.physics.world.colliders.len(),
           };
         },
       };

@@ -27,10 +27,12 @@ export class InputControls {
   sensitivity = 1;
   device: InputDevice;
 
-  private readonly mouse = { x: 0, y: 0, inside: false, active: false, left: false, right: false, stickX: 0, stickY: 0 };
+  /** Read by the HUD for the reticle. */
+  readonly mouse = { x: 0, y: 0, inside: false, active: false, left: false, right: false, stickX: 0, stickY: 0 };
   private readonly keys = new Set<string>();
   private readonly keyStick = { x: 0, y: 0 };
-  private readonly touchSteer = { id: null as number | null, originX: 0, originY: 0, x: 0, y: 0, stickX: 0, stickY: 0 };
+  /** Read by the HUD for the thumb stick. */
+  readonly touchSteer = { id: null as number | null, originX: 0, originY: 0, x: 0, y: 0, stickX: 0, stickY: 0 };
   private readonly touchBoostPointers = new Set<number>();
   private readonly touchButtons = { boost: false, brake: false };
   private readonly pad = { connected: false, stickX: 0, stickY: 0, boost: false, brake: false, previous: [] as boolean[] };

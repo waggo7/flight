@@ -23,6 +23,7 @@ export class FlightSnapshot implements CameraSubject {
   readonly forward = new Vector3(0, 0, 1);
   readonly up = new Vector3(0, 1, 0);
   readonly acceleration = new Vector3();
+  readonly velocity = new Vector3();
   yaw = 0;
   pitch = 0;
   bank = 0;
@@ -32,6 +33,8 @@ export class FlightSnapshot implements CameraSubject {
   hoverBlend = 1;
   boostBlend = 0;
   surfaceRush = 0;
+  groundClearance = Infinity;
+  overWater = false;
 
   copyFrom(source: FlightModel | FlightSnapshot): void {
     this.position.copy(source.position);
@@ -39,6 +42,7 @@ export class FlightSnapshot implements CameraSubject {
     this.forward.copy(source.forward);
     this.up.copy(source.up);
     this.acceleration.copy(source.acceleration);
+    this.velocity.copy(source.velocity);
     this.yaw = source.yaw;
     this.pitch = source.pitch;
     this.bank = source.bank;
@@ -48,6 +52,8 @@ export class FlightSnapshot implements CameraSubject {
     this.hoverBlend = source.hoverBlend;
     this.boostBlend = source.boostBlend;
     this.surfaceRush = source.surfaceRush;
+    this.groundClearance = source.groundClearance;
+    this.overWater = source.overWater;
   }
 
   blend(a: FlightSnapshot, b: FlightSnapshot, t: number): void {
@@ -56,6 +62,7 @@ export class FlightSnapshot implements CameraSubject {
     this.forward.lerpVectors(a.forward, b.forward, t).normalize();
     this.up.lerpVectors(a.up, b.up, t).normalize();
     this.acceleration.lerpVectors(a.acceleration, b.acceleration, t);
+    this.velocity.lerpVectors(a.velocity, b.velocity, t);
     this.yaw = lerpAngle(a.yaw, b.yaw, t);
     this.pitch = lerp(a.pitch, b.pitch, t);
     this.bank = lerp(a.bank, b.bank, t);
@@ -65,6 +72,9 @@ export class FlightSnapshot implements CameraSubject {
     this.hoverBlend = lerp(a.hoverBlend, b.hoverBlend, t);
     this.boostBlend = lerp(a.boostBlend, b.boostBlend, t);
     this.surfaceRush = lerp(a.surfaceRush, b.surfaceRush, t);
+    // Infinity (nothing below) doesn't lerp.
+    this.groundClearance = Number.isFinite(a.groundClearance) && Number.isFinite(b.groundClearance) ? lerp(a.groundClearance, b.groundClearance, t) : b.groundClearance;
+    this.overWater = t < 0.5 ? a.overWater : b.overWater;
   }
 }
 
@@ -75,6 +85,8 @@ export interface FlightService {
   /** When false the hero holds still (title screen, pause). */
   active: boolean;
   respawn(position?: Vector3, yaw?: number): void;
+  /** Put the hero somewhere mid-flight (test poses and demo scenes). */
+  place(position: Vector3, yaw: number, pitch: number, speed: number): void;
 }
 
 export const FlightToken = serviceToken<FlightService>('flight');
@@ -99,6 +111,15 @@ export const flightFeature: Feature = {
       active: false,
       respawn(position = SPAWN_POSITION, yaw = SPAWN_YAW) {
         model.reset(position, yaw);
+        current.copyFrom(model);
+        previous.copyFrom(model);
+        view.copyFrom(model);
+      },
+      place(position, yaw, pitch, speed) {
+        model.position.copy(position);
+        model.yaw = yaw;
+        model.pitch = pitch;
+        model.speed = speed;
         current.copyFrom(model);
         previous.copyFrom(model);
         view.copyFrom(model);

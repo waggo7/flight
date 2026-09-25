@@ -1,19 +1,29 @@
 import { loadContent } from '../engine/content-library';
 import { createGameContext, installFeatures } from '../engine/game-context';
 import { GameLoop } from '../engine/game-loop';
+import { HudToken } from '../features/hud-feature';
+import { SceneToken } from '../features/scene-feature';
+import '../present/ui/hud-styles.css';
 import { createFeatureList } from './feature-list';
+import { detectProfile } from './quality-profile';
 import './styles.css';
 
-// Boot: validate content, build the context, install features, then run frames.
+// Boot: validate content, build the context, install features, warm up the shaders, then run
+// frames (or, in ?test mode, wait for the test API to drive them).
 
 async function boot(): Promise<void> {
   const content = loadContent();
   const testMode = new URLSearchParams(location.search).has('test');
-  const profile = matchMedia('(pointer: coarse)').matches ? 'phone' : 'desktop';
-  const ctx = createGameContext(content, { profile, testMode });
+  const ctx = createGameContext(content, { profile: detectProfile(), testMode });
   let gameLoop: GameLoop | null = null;
   await installFeatures(ctx, createFeatureList(() => gameLoop!));
   gameLoop = new GameLoop(ctx);
+
+  // Compile every shader before the first visible frame so the title fades in smoothly.
+  const { renderer, scene, camera } = ctx.services.require(SceneToken);
+  renderer.compile(scene, camera);
+  gameLoop.frame(0);
+  ctx.services.require(HudToken).ready();
   document.body.dataset.ready = 'true';
   if (testMode) return;
 

@@ -65,6 +65,7 @@ export interface SimulationTuning {
   maxFrameDelta: number;
   hitStop: { seconds: number; timeScale: number };
   seed: number;
+  physics: { gravity: number; solverIterations: number; debrisHitsDebris: { desktop: boolean; phone: boolean } };
 }
 
 /** One-shot input actions (content/input/actions.json → presses). */

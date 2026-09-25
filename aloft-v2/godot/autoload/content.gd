@@ -9,7 +9,7 @@ var input_actions := {}
 
 
 func _ready() -> void:
-	for name in ["flight", "camera", "input", "simulation"]:
+	for name in ["flight", "camera", "input", "simulation", "destruction"]:
 		tuning[name] = _read(ROOT + "tuning/%s.json" % name)
 	input_actions = _read(ROOT + "input/actions.json")
 

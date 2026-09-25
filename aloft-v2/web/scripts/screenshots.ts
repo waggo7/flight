@@ -1,7 +1,7 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
-import { openPage, serveDist, type Viewport } from './browser-harness';
+import { compareImages, openPage, serveDist, type Viewport } from './browser-harness';
 
 // Headless end-to-end check of the built game: boots in ?test mode, flies scripted inputs,
 // asserts the basics, and saves screenshots to test-results/shots/.
@@ -56,6 +56,25 @@ async function runViewport(url: string, viewport: Viewport): Promise<void> {
     await advance(page, 240, { brake: true });
     expect((await snapshot(page)).mode === 'hover', `${viewport}: braking should settle into a hover`);
     await shot('hover');
+
+    // No pop: towers swapped for their storey × bay chunks must draw exactly like the intact ones.
+    const [intact, chunked, swapped] = await page.evaluate(() => {
+      const api = window.__aloft!;
+      api.pose({ position: [-36, 70, -700], yaw: 0, speed: 60 });
+      api.setControls({});
+      api.advance(30);
+      const canvas = document.querySelector('canvas')!;
+      api.render();
+      const before = canvas.toDataURL('image/png');
+      const count = api.chunkify(-36, -560, 260);
+      api.render();
+      return [before, canvas.toDataURL('image/png'), count] as const;
+    });
+    const noPop = await compareImages(page, intact, chunked, { downscale: 1, threshold: 0.06 });
+    console.log(`${viewport}: no-pop — ${swapped} towers chunked, ${(noPop.share * 100).toFixed(3)}% of pixels differ`);
+    expect(swapped > 10, `${viewport}: no-pop check should chunk the canyon towers, chunked ${swapped}`);
+    expect(noPop.share <= 0.005, `${viewport}: chunking popped ${(noPop.share * 100).toFixed(2)}% of pixels (max 0.5%)`);
+    writeFileSync(`${OUT}/${viewport}-no-pop-diff.png`, Buffer.from(noPop.diff.split(',')[1]!, 'base64'));
     expect(errors.length === 0, `${viewport}: page errors:\n  ${errors.join('\n  ')}`);
   } finally {
     await browser.close();

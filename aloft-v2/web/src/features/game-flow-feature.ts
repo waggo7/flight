@@ -1,13 +1,17 @@
+import { damp } from '../core/scalar-math';
 import type { Feature } from '../engine/game-context';
 import { serviceToken } from '../engine/service-registry';
 import { FramePhase } from '../engine/system-phases';
-import { damp } from '../core/scalar-math';
 import { CameraToken } from './camera-feature';
 import { ControlsToken } from './controls-feature';
 import { FlightToken } from './flight-feature';
+import { HudToken } from './hud-feature';
+import { SettingsToken, type PlayerSettings } from './settings-feature';
 import { TimeScaleToken } from './time-scale-feature';
 
-// Title → flying ⇄ paused, restart, and the view toggle. M1 ports v1's full HUD on top.
+// Title → flying ⇄ paused, and Restart (a short fade, then the world rebuilt and the hero back
+// at the start). Owns which screen shows, and applies the player settings to input, camera
+// and HUD (audio applies its own).
 
 export type GameState = 'title' | 'flying' | 'paused';
 
@@ -23,11 +27,13 @@ export interface GameFlowService {
   start(): void;
   pause(): void;
   resume(): void;
+  /** Rebuild the world at once (no fade). */
   restart(): void;
-  toggleView(): void;
 }
 
 export const GameFlowToken = serviceToken<GameFlowService>('game-flow');
+
+const RESTART_FADE_MS = 320;
 
 export const gameFlowFeature: Feature = {
   name: 'game-flow',
@@ -36,16 +42,22 @@ export const gameFlowFeature: Feature = {
     const controls = ctx.services.require(ControlsToken);
     const rig = ctx.services.require(CameraToken);
     const time = ctx.services.require(TimeScaleToken);
+    const hud = ctx.services.require(HudToken);
+    const settings = ctx.services.require(SettingsToken);
+    const input = controls.input;
     let state: GameState = 'title';
+    let restarting = false;
 
     const setState = (next: GameState): void => {
       state = next;
       flight.active = next === 'flying';
-      controls.input.setEnabled(next === 'flying');
+      input.setEnabled(next === 'flying');
       time.setPaused(next === 'paused');
-      document.body.dataset.state = next;
+      if (next === 'flying') hud.showFlight();
+      else if (next === 'paused') hud.showPause();
       ctx.events.emit('game:state', { state: next });
     };
+    const blur = (): void => (document.activeElement as HTMLElement | null)?.blur?.();
 
     const service: GameFlowService = {
       get state() {
@@ -55,12 +67,15 @@ export const gameFlowFeature: Feature = {
         if (state !== 'title') return;
         setState('flying');
         flight.model.launch();
+        blur();
       },
       pause() {
         if (state === 'flying') setState('paused');
       },
       resume() {
-        if (state === 'paused') setState('flying');
+        if (state !== 'paused') return;
+        setState('flying');
+        blur();
       },
       restart() {
         flight.respawn();
@@ -69,22 +84,52 @@ export const gameFlowFeature: Feature = {
         ctx.events.emit('game:restart', {});
         setState('flying');
       },
-      toggleView() {
-        rig.setMode(rig.mode === 'first' ? 'chase' : 'first');
-      },
     };
     ctx.services.provide(GameFlowToken, service);
-    setState('title');
 
-    const input = controls.input;
-    input.on('confirm', () => service.start());
-    input.on('pause', () => (state === 'paused' ? service.resume() : service.pause()));
-    input.on('restart', () => service.restart());
-    input.on('toggle-view', () => service.toggleView());
+    const restartWithFade = (): void => {
+      if (state === 'title' || restarting) return;
+      restarting = true;
+      input.setEnabled(false);
+      const finish = (): void => {
+        service.restart();
+        restarting = false;
+        hud.setFade(false);
+        const launchKey = input.device === 'touch' ? 'Hold the right side' : input.device === 'gamepad' ? 'Hold A' : 'Hold click or Space';
+        hud.toast(`Fresh start · ${launchKey} to launch`, 4);
+        blur();
+      };
+      if (ctx.testMode) {
+        finish();
+        return;
+      }
+      hud.setFade(true);
+      setTimeout(finish, RESTART_FADE_MS);
+    };
+
+    const applySettings = (current: Readonly<PlayerSettings>): void => {
+      input.sensitivity = current.sensitivity;
+      input.invertY = current.invertY;
+      rig.setMode(current.firstPerson ? 'first' : 'chase');
+      hud.applySettings(current);
+    };
+    applySettings(settings.current);
+    settings.onChange(applySettings);
+
+    hud.on('start', () => service.start());
+    hud.on('resume', () => service.resume());
+    hud.on('pause', () => service.pause());
+    hud.on('restart', restartWithFade);
+    hud.on('settings', (next) => settings.update(next));
+    hud.on('touchButton', (name, pressed) => input.setTouchButton(name, pressed));
+    input.on('confirm', () => (state === 'title' ? service.start() : service.resume()));
+    input.on('pause', () => (state === 'flying' ? service.pause() : service.resume()));
+    input.on('restart', restartWithFade);
+    input.on('toggle-view', () => settings.update({ firstPerson: !settings.current.firstPerson }));
+    input.on('toggle-keys', () => settings.update({ showKeys: !settings.current.showKeys }));
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) service.pause();
     });
-    document.getElementById('start')?.addEventListener('click', () => service.start());
 
     // The title camera swings out to the chase position once flying (v1's easing).
     ctx.systems.addFrame({

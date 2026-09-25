@@ -6,7 +6,7 @@ import simulationJson from '@content/tuning/simulation.json';
 import destructionJson from '@content/tuning/destruction.json';
 import type { DestructionTuning } from '../core/destruction-tuning';
 import type { CameraTuning, FlightTuning, InputBindings, InputTuning, SimulationTuning } from '../core/flight-tuning';
-import { arr, int, num, obj, optional, str, validated, type Rule, type Shape } from './content-validation';
+import { arr, bool, int, num, obj, optional, str, validated, type Rule, type Shape } from './content-validation';
 
 // All engine-neutral content (aloft-v2/content/*.json), validated once at boot. The Godot
 // scaffold loads the same files.
@@ -39,6 +39,7 @@ export const SIMULATION_SHAPE: Shape = {
   maxFrameDelta: num(0.01, 1),
   hitStop: obj({ seconds: num(0, 2), timeScale: num(0, 1) }),
   seed: int(0, 2 ** 31),
+  physics: obj({ gravity: num(0, 50), solverIterations: int(1, 16), debrisHitsDebris: obj({ desktop: bool(), phone: bool() }) }),
 };
 
 const perStyle = (min: number, max: number): Rule => obj({ glass: num(min, max), stone: num(min, max), plain: num(min, max) });

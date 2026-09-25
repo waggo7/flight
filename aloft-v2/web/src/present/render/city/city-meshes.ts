@@ -1,4 +1,4 @@
-import { Color, ConeGeometry, DynamicDrawUsage, Group, InstancedMesh, Matrix4, MeshBasicMaterial, SphereGeometry, Vector3 } from 'three';
+import { Color, ConeGeometry, DynamicDrawUsage, Group, InstancedMesh, Matrix4, MeshBasicMaterial, SphereGeometry, Vector3, type Material } from 'three';
 import type { BoxPiece, CityBlueprint, RoundPiece } from '../../../core/city-blueprint';
 import { boxStoreyLayout, roundStoreyLayout } from '../../../core/storey-layout';
 import { createSpireMaterial, INTACT_EXTERIOR_MASK } from './facade-material';
@@ -39,10 +39,16 @@ export class CityMeshes {
   readonly rounds: FacadeInstances;
   readonly spires: InstancedMesh;
   readonly beacons: InstancedMesh;
+  /** Loose storey × bay chunks of damaged buildings (drawn only up to `chunkCount`). */
+  readonly chunks: FacadeInstances;
+  private chunkCount = 0;
   private readonly beaconMaterial = new MeshBasicMaterial({ color: new Color(8, 0.4, 0.25) });
   private readonly pristine: Map<InstancedMesh, Float32Array>;
 
-  constructor(readonly blueprint: CityBlueprint) {
+  constructor(
+    readonly blueprint: CityBlueprint,
+    { chunkCapacity = 12000 }: { chunkCapacity?: number } = {},
+  ) {
     this.group.name = 'city';
     this.boxes = new FacadeInstances('box', blueprint.boxes.length);
     blueprint.boxes.forEach((piece, i) => this.boxes.set(i, boxFacadeInstance(piece)));
@@ -70,6 +76,29 @@ export class CityMeshes {
       this.group.add(mesh);
     }
     this.pristine = new Map(meshes.map((mesh) => [mesh, mesh.instanceMatrix.array.slice() as Float32Array]));
+
+    // Same material as the intact boxes, so chunks share their shader program.
+    this.chunks = new FacadeInstances('box', chunkCapacity, this.boxes.mesh.material as Material);
+    this.chunks.mesh.frustumCulled = false; // members move anywhere; the bounding sphere would go stale
+    this.chunks.mesh.count = 0;
+    this.chunks.mesh.name = 'city-chunks';
+    this.group.add(this.chunks.mesh);
+  }
+
+  /**
+   * Swap an intact box piece for chunks (from splitBoxIntoChunks) that draw exactly like it.
+   * Returns the chunk instance ids, or null when the pool is full (the piece stays intact).
+   */
+  replaceWithChunks(boxIndex: number, chunks: readonly FacadeInstance[]): number[] | null {
+    if (this.chunkCount + chunks.length > this.chunks.capacity) return null;
+    const ids = chunks.map((chunk) => {
+      const id = this.chunkCount++;
+      this.chunks.set(id, chunk);
+      return id;
+    });
+    this.chunks.mesh.count = this.chunkCount;
+    this.boxes.hide(boxIndex);
+    return ids;
   }
 
   /** Beacons blink together. */
@@ -84,5 +113,7 @@ export class CityMeshes {
       mesh.instanceMatrix.array.set(matrices);
       mesh.instanceMatrix.needsUpdate = true;
     }
+    this.chunkCount = 0;
+    this.chunks.mesh.count = 0;
   }
 }

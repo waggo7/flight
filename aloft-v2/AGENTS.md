@@ -14,22 +14,23 @@ v1 (the repo root) is the frozen reference. The design and build order live in
 - `npm run e2e` — headless Chromium: boots the built game in `?test` mode, flies, asserts, screenshots
 - `npm run conformance:write` — regenerate `conformance/*.json` (only when behaviour changes on purpose)
 - `npm run godot:check` — Godot 4.7.2 headless replays the conformance vectors against `godot/core/`
+- `npm run look-parity` — renders fixed poses in v1 (repo-root `dist/`, build it first) and v2 and diffs them
 
 ## Layout
 
 | Path | Owns |
 |---|---|
-| `content/` | Engine-neutral JSON (tuning, input bindings, later materials, heroes, scenarios). Source of truth for web **and** Godot |
+| `content/` | Engine-neutral JSON (tuning incl. destruction, input bindings; later heroes, scenarios). Source of truth for web **and** Godot |
 | `conformance/` | Golden vectors: scripted inputs → expected outputs for every portable core module |
 | `godot/` | Godot 4.7 scaffold: `core/` ports, `autoload/` (Content, Events, InputActions), headless conformance runner |
-| `web/src/core/` | Portable pure logic (flight model, later structure graph, crush planner, support check, pose graph). The Godot port target |
+| `web/src/core/` | Portable pure logic: flight model, city blueprint, storey layout, structure graph, crush planner, support check (later pose graph). The Godot port target |
 | `web/src/engine/` | Fixed-step loop, system phases, typed event bus, seeded random streams, service registry, content validation |
-| `web/src/sim/` | Headless simulation (world contracts, grey-box world; Rapier from M2). Runs in Node |
+| `web/src/sim/` | Headless simulation with Rapier: physics world, collision groups, the city's static colliders, world queries. Runs in Node |
 | `web/src/present/` | Browser-only: rendering, input devices, audio, UI |
 | `web/src/features/` | Feature modules: each `install(ctx)` registers systems, services, events and UI |
 | `web/src/app/` | Boot and `feature-list.ts`, the composition root |
-| `web/tests/` | `unit/` (Vitest), `conformance/` (shared case definitions), `sim/` (Rapier in Node, from M2) |
-| `web/scripts/` | Conformance writer, Godot sync/check, size gate, headless browser harness |
+| `web/tests/` | `unit/` (Vitest), `conformance/` (shared case definitions), `sim/` (Rapier in Node), `fixtures/` |
+| `web/scripts/` | Conformance writer, Godot sync/check, size gate, headless browser harness, e2e shots (+ no-pop check), look parity vs v1 |
 
 ## Conventions
 
@@ -56,6 +57,7 @@ v1 (the repo root) is the frozen reference. The design and build order live in
 - `npm run check` must pass; for visual or behaviour changes also `npm run build && npm run e2e`, and
   look at `web/test-results/shots/` (desktop 1280×720 and phone 390×844).
 - `?test` mode stops the render loop and exposes `window.__aloft` (`start()`, `setControls({...})`,
-  `advance(frames)`, `snapshot`, `restart()`); `advance` draws only its last frame.
+  `advance(frames)`, `pose({...})`, `render()`, `chunkify(x, z, r)`, `snapshot`, `restart()`);
+  `advance` draws only its last frame.
 - Core behaviour changes: update vectors with `npm run conformance:write`, update the GDScript port,
   and keep `npm run godot:check` green.

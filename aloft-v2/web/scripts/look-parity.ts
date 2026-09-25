@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
-import { openPage, serveDirectory } from './browser-harness';
+import { compareImages, openPage, serveDirectory } from './browser-harness';
 
 // Renders the same poses in v1 (repo root dist/) and v2 (aloft-v2/web/dist/) and compares the
 // canvases. The world should look the same; the facade differs on purpose in fine detail (window
@@ -22,13 +22,18 @@ interface Pose {
   yaw?: number;
   speed?: number;
   controls?: { steerX?: number; steerY?: number; boost?: boolean };
+  /** Share of pixels allowed to differ, when a pose has known, intended differences (default 3%). */
+  maxShare?: number;
 }
 
 const POSES: Pose[] = [
   { name: 'title', titleFrames: 90 },
-  { name: 'canyon', position: [-36, 70, -700], yaw: 0, speed: 60, controls: {} },
+  // Lit windows are hashed per building-space cell in v2 (so a broken-off chunk keeps its
+  // windows), so a different set of windows glows; the scene is otherwise the same.
+  { name: 'canyon', position: [-36, 70, -700], yaw: 0, speed: 60, controls: {}, maxShare: 0.2 },
   { name: 'above-clouds', position: [-800, 760, -1400], yaw: 0.6, speed: 50, controls: { steerY: -0.05 } },
-  { name: 'sea-skim', position: [-1700, 4, -800], yaw: -2.0, speed: 90, controls: { boost: true } },
+  // Speed streaks, spray and wave phase depend on frame history, not on the look.
+  { name: 'sea-skim', position: [-1700, 4, -800], yaw: -2.0, speed: 90, controls: { boost: true }, maxShare: 0.14 },
 ];
 
 /** Each build's own test API, reduced to what the parity check needs. */
@@ -73,50 +78,6 @@ async function capture(page: Page, version: 'v1' | 'v2', pose: Pose): Promise<st
   );
 }
 
-async function compare(page: Page, a: string, b: string): Promise<{ share: number; diff: string }> {
-  return page.evaluate(
-    async ([first, second, threshold]) => {
-      const load = (src: string): Promise<HTMLImageElement> =>
-        new Promise((resolve, reject) => {
-          const image = new Image();
-          image.onload = () => resolve(image);
-          image.onerror = reject;
-          image.src = src;
-        });
-      const [imageA, imageB] = await Promise.all([load(first as string), load(second as string)]);
-      const width = Math.round(imageA.width / 4);
-      const height = Math.round(imageA.height / 4);
-      const pixels = (image: HTMLImageElement): Uint8ClampedArray => {
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const context = canvas.getContext('2d')!;
-        context.drawImage(image, 0, 0, width, height);
-        return context.getImageData(0, 0, width, height).data;
-      };
-      const pa = pixels(imageA);
-      const pb = pixels(imageB);
-      const diffCanvas = document.createElement('canvas');
-      diffCanvas.width = width;
-      diffCanvas.height = height;
-      const diffContext = diffCanvas.getContext('2d')!;
-      const diff = diffContext.createImageData(width, height);
-      let different = 0;
-      for (let i = 0; i < pa.length; i += 4) {
-        const distance = Math.hypot(pa[i]! - pb[i]!, pa[i + 1]! - pb[i + 1]!, pa[i + 2]! - pb[i + 2]!) / 441.7;
-        const off = distance > (threshold as number);
-        if (off) different++;
-        diff.data[i] = off ? 255 : pa[i]! * 0.25;
-        diff.data[i + 1] = off ? 40 : pa[i + 1]! * 0.25;
-        diff.data[i + 2] = off ? 40 : pa[i + 2]! * 0.25;
-        diff.data[i + 3] = 255;
-      }
-      diffContext.putImageData(diff, 0, 0);
-      return { share: different / (width * height), diff: diffCanvas.toDataURL('image/png') };
-    },
-    [a, b, 0.12] as const,
-  );
-}
 
 const saveDataUrl = (name: string, dataUrl: string): void => writeFileSync(`${OUT}/${name}.png`, Buffer.from(dataUrl.split(',')[1]!, 'base64'));
 
@@ -146,13 +107,14 @@ for (const viewport of ['desktop', 'phone'] as const) {
     for (const pose of POSES) {
       const a = v1.get(pose.name)!;
       const b = v2.get(pose.name)!;
-      const { share, diff } = await compare(page, a, b);
+      const { share, diff } = await compareImages(page, a, b);
       saveDataUrl(`${viewport}-${pose.name}-v1`, a);
       saveDataUrl(`${viewport}-${pose.name}-v2`, b);
       saveDataUrl(`${viewport}-${pose.name}-diff`, diff);
       worst = Math.max(worst, share);
       console.log(`${viewport} ${pose.name}: ${(share * 100).toFixed(2)}% of pixels differ`);
-      if (share > MAX_DIFFERENT_SHARE) failures.push(`${viewport} ${pose.name}: ${(share * 100).toFixed(2)}% > ${MAX_DIFFERENT_SHARE * 100}%`);
+      const limit = pose.maxShare ?? MAX_DIFFERENT_SHARE;
+      if (share > limit) failures.push(`${viewport} ${pose.name}: ${(share * 100).toFixed(2)}% > ${(limit * 100).toFixed(0)}%`);
     }
   } finally {
     await browser.close();
