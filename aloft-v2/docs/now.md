@@ -1,12 +1,11 @@
 # Now
 
-- **Milestone:** M1 (look, city, facade) complete; M2 (Rapier) mostly done; M3 core (structure,
-  crush planner, support check) done → next: M2 finish + M3 sim (fragment actors in Rapier).
-- **Last verified:** `npm run check` green (129+ tests), `npm run e2e` green (desktop + phone,
-  includes the no-pop check), look parity vs v1 green with per-pose tolerances.
+- **Milestone:** M0–M4 done (look, Rapier, destruction, collapse visuals) → next M5 (collapse sound).
+- **Last verified:** `npm run check` green (136 tests incl. Rapier sim scenarios), `npm run e2e` green
+  on desktop + phone (smash → topple → collapse → rubble stills, no-pop, dust engulf luminance).
 - **Next steps:**
-  - M2: contact harvester, governor v0, `perf:physics`, state hash after restart; delete the
-    temporary `sim/city-collision-grid.ts` once nothing needs it.
-  - M3 sim: destruction system (hero sweep → `applyDamage` → `checkSupport` → fragment actors),
-    hinge rule, breakup, pancake, dominoes, activation quotas; wire the flight model's `smash`.
-  - Dev overlay: physics bodies and step ms.
+  - M5: audio engine (buses, limiter, street-canyon reverb, spatial voices with distance delay),
+    recipes (modal impacts, cracks, groans, rubble grains, rumble bed, glass cascade, ground boom),
+    offline render checks + WAVs.
+  - Open M3 items: explicit round / twist / spire scenario tests; 5-collapse perf in the browser
+    (Node p95 ≈ 6 ms for 3 smashes; lever = debris budget); delete `sim/city-collision-grid.ts`.

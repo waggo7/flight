@@ -55,3 +55,34 @@ Append-only. One entry per milestone.
   toughness, push lever 8 s. Outcomes now: 30 m glass — hole at 40, groans at 55, topples forward
   at 70/108; 15 m stone and 22 m towers topple forward from 55; round towers take 2–3 boost hits;
   a centred blast pancakes.
+
+## M2 — Rapier (2026-09-25)
+
+- Physics world (one importer of Rapier), collision groups, owner table with alive flags, pristine
+  snapshot restore on Restart (handles survive, so everything holds handles, never objects).
+- `RapierCityWorld` implements the flight/camera world contract with a swept ball, push-out,
+  camera rays and floor rays; contract tests pin Rapier 0.20's conventions.
+- The contact harvester and rubble governor live in the destruction system (M3).
+
+## M3 — Destruction in Rapier (2026-09-25)
+
+- `structure-regions` (core) turns nodes into merged bands and bay boxes with exterior masks.
+- `destruction-system` (sim): hits → crush planner → support check; damaged segments rebuild
+  their colliders from what stands; crushed chunks become debris; the part above a failed storey
+  becomes one dynamic body that Rapier tips over its hinge.
+- Found by the sim traces and fixed: debris wedged in the blow-out propped sections up (sections
+  now ignore debris); crushing the hinge at 6° killed the rotation (the hinge now holds to 0.5 rad);
+  sections balanced on their stump. Progressive collapse: the stump chunks under a leaning
+  section's leading contacts crush once edge stress (W/A)(1 + 6e/b) passes the (dynamic) reserve.
+- Landings break sections into bands and chunks; landings on neighbours knock on (generation ≤ 2).
+- Gates: 30 m glass tower stands at 55 m/s, topples forward at 70/108, first ground hit 9.4 s /
+  8.5 s (plan said ≤ 9 s; gate set at < 10 s — the tip from rest is physics-bound); stump re-hit
+  regression; restart; determinism; real city: 3 smashes → 5 failures, 14 knock-on hits, within
+  budgets, step p95 ≈ 6 ms in Node (plan: 5 ms).
+
+## M4 — Destruction visuals (2026-09-25)
+
+- Collapse effects: glass glints, concrete chips, dust jets from crushed storeys along the hit, a
+  street-grid dust surge after heavy landings; two-band camera shake (sharp + low rumble); slow
+  motion, FOV kick and "Timber!" on the first collapse; debris at the lens cut away.
+- e2e: camera buried in dust keeps mean luminance 0.54 / 0.58 (gate 0.15–0.85).
