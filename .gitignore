@@ -2,3 +2,6 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# Local git worktrees made by Claude Code agents
+.claude/worktrees/
