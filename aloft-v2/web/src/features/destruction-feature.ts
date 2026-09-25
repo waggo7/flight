@@ -3,6 +3,7 @@ import type { Feature } from '../engine/game-context';
 import { serviceToken } from '../engine/service-registry';
 import { FramePhase, StepPhase } from '../engine/system-phases';
 import { DestructionView } from '../present/render/city/destruction-view';
+import { CollapseEffects } from '../present/render/effects/collapse-effects';
 import { DestructionSystem } from '../sim/destruction-system';
 import { AudioToken } from './audio-feature';
 import { CameraToken } from './camera-feature';
@@ -23,7 +24,8 @@ export const destructionFeature: Feature = {
   name: 'destruction',
   install(ctx) {
     const city = ctx.services.require(CityToken);
-    const { camera } = ctx.services.require(SceneToken);
+    const scene = ctx.services.require(SceneToken);
+    const { camera } = scene;
     const { dust, motion } = ctx.services.require(EffectsToken);
     const audio = ctx.services.require(AudioToken);
     const rig = ctx.services.require(CameraToken);
@@ -43,23 +45,28 @@ export const destructionFeature: Feature = {
     system.enabled = settings.current.destruction;
     settings.onChange((next) => (system.enabled = next.destruction));
     const view = new DestructionView(system, city.meshes, city.blueprint);
+    const collapse = new CollapseEffects(dust, () => ctx.random.stream('collapse-effects').next(), { glass: scene.quality.glassShards, chips: scene.quality.concreteChips });
+    scene.scene.add(collapse.glass.points, collapse.chips.points);
 
     ctx.systems.addStep({ name: 'destruction-before', phase: StepPhase.DestructionApply, step: () => system.beforeStep() });
     ctx.systems.addStep({ name: 'destruction-after', phase: StepPhase.Contacts, step: (dt) => system.afterStep(dt) });
-    ctx.systems.addFrame({ name: 'destruction-view', phase: FramePhase.Present, frame: (_realDt, alpha) => view.sync(alpha) });
+    ctx.systems.addFrame({
+      name: 'destruction-view',
+      phase: FramePhase.Present,
+      frame: (realDt, alpha) => {
+        view.sync(alpha, camera.position);
+        collapse.update(realDt * ctx.loop.timeScale, scene.projectionScale);
+      },
+    });
     // The city feature restores the pristine world first (it installed earlier).
-    ctx.events.on('game:restart', () => system.reset());
+    ctx.events.on('game:restart', () => {
+      system.reset();
+      collapse.clear();
+    });
 
     const distanceTo = (p: { x: number; y: number; z: number }): number => Math.hypot(p.x - camera.position.x, p.y - camera.position.y, p.z - camera.position.z);
 
-    ctx.events.on('destruction:damage', ({ crushed }) => {
-      // Dust jets out of every crushed storey (a few puffs per hit, not one per chunk).
-      const step = Math.max(1, Math.floor(crushed.length / 10));
-      for (let i = 0; i < crushed.length; i += step) {
-        const p = crushed[i]!;
-        dust.puff(p.x, p.y, p.z, { size: 9, growth: 2.6, life: 6, rise: 1.4, alpha: 0.5, darkness: 0.25 });
-      }
-    });
+    ctx.events.on('destruction:damage', ({ crushed, style, direction }) => collapse.crushed(crushed, style, direction));
     ctx.events.on('destruction:failure', ({ position, height, first }) => {
       audio.collapse(distanceTo(position), height);
       if (!first) return;
@@ -71,10 +78,11 @@ export const destructionFeature: Feature = {
       const distance = distanceTo(position);
       const size = clamp(Math.cbrt(energy / 1e6) * 12, 20, 260);
       if (energy > 5e7) audio.collapseImpact(distance, size);
-      rig.shake(clamp(Math.log10(energy / 1e6) * 0.25 - distance / 1200, 0, 0.8) * motion);
-      if (ground && energy > 2e7) {
-        for (let i = 0; i < 4; i++) dust.puff(position.x + (i - 1.5) * 8, position.y + 2, position.z, { size: 14, growth: 3, life: 8, rise: 1, vx: (i - 1.5) * 3, alpha: 0.55, darkness: 0.2 });
-      }
+      // Two bands: a sharp knock for close hits, a heavy low rumble that carries further.
+      const loud = Math.log10(Math.max(energy, 1e6) / 1e6);
+      rig.shake(clamp(loud * 0.2 - distance / 900, 0, 0.7) * motion);
+      rig.rumble(clamp(loud * 0.18 - distance / 2500, 0, 0.8) * motion);
+      if (ground && energy > 2e7) collapse.groundImpact(position, energy);
     });
   },
 };

@@ -7,6 +7,7 @@ import { CameraToken } from './camera-feature';
 import { CityToken } from './city-feature';
 import { ControlsToken } from './controls-feature';
 import { DestructionToken } from './destruction-feature';
+import { EffectsToken } from './effects-feature';
 import { FlightToken } from './flight-feature';
 import { GameFlowToken } from './game-flow-feature';
 import { SceneToken } from './scene-feature';
@@ -37,6 +38,8 @@ export interface TestApi {
   aimAtTower(speed: number, distance?: number): { building: number; yaw: number; point: [number, number, number] } | null;
   /** Hover `distance` m to the side of `point` (looking across `yaw`), facing it. */
   watch(point: [number, number, number], yaw: number, distance?: number): void;
+  /** Bury the camera in dust (the engulf check). */
+  engulfInDust(): void;
   readonly destruction: { fragments: number; bodies: number };
   /** Swap every tower piece within `radius` m (ground plane) of a point for its chunks; returns how many. */
   chunkify(x: number, z: number, radius: number): number;
@@ -62,6 +65,7 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
       const rig = ctx.services.require(CameraToken);
       const city = ctx.services.require(CityToken);
       const destruction = ctx.services.require(DestructionToken);
+      const effects = ctx.services.require(EffectsToken);
       window.__aloft = {
         start: () => flow.start(),
         restart: () => flow.restart(),
@@ -105,6 +109,10 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
           const from = new Vector3(point[0] - Math.sin(side) * distance + Math.sin(yaw) * 40, point[1] + 30, point[2] - Math.cos(side) * distance + Math.cos(yaw) * 40);
           flight.respawn(from, side);
           rig.snapTo(flight.view);
+        },
+        engulfInDust() {
+          const p = scene.camera.position;
+          for (let i = 0; i < 40; i++) effects.dust.puff(p.x + (i % 5 - 2) * 6, p.y + ((i / 5) % 3 - 1) * 5, p.z + (Math.floor(i / 15) - 1) * 6, { size: 22, growth: 1, life: 20, rise: 0, alpha: 0.7, darkness: 0.2 });
         },
         get destruction() {
           return { fragments: destruction.fragmentCount, bodies: city.physics.world.bodies.len() };

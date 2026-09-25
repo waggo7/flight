@@ -90,6 +90,26 @@ async function runViewport(url: string, viewport: Viewport): Promise<void> {
       await shot('collapse');
       await advance(page, 300, { brake: true });
       await shot('rubble');
+      // Engulfed in dust, the picture veils over but never goes black or blank white.
+      const luminance = await page.evaluate(() => {
+        const api = window.__aloft!;
+        api.engulfInDust();
+        api.advance(90, 1 / 60);
+        api.render();
+        const source = document.querySelector('canvas')!;
+        const probe = document.createElement('canvas');
+        probe.width = 64;
+        probe.height = 36;
+        const context = probe.getContext('2d')!;
+        context.drawImage(source, 0, 0, 64, 36);
+        const data = context.getImageData(0, 0, 64, 36).data;
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 4) sum += (0.2126 * data[i]! + 0.7152 * data[i + 1]! + 0.0722 * data[i + 2]!) / 255;
+        return sum / (data.length / 4);
+      });
+      await shot('dust');
+      console.log(`${viewport}: engulfed in dust, mean luminance ${luminance.toFixed(2)}`);
+      expect(luminance >= 0.15 && luminance <= 0.85, `${viewport}: dust veil luminance ${luminance.toFixed(2)} outside 0.15–0.85`);
       const later = await page.evaluate(() => window.__aloft!.snapshot);
       expect(Number.isFinite((later.position as number[])[1]!), `${viewport}: hero position should stay finite`);
     }

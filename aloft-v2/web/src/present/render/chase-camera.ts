@@ -40,6 +40,8 @@ export class ChaseCamera {
   roll = 0;
   distance: number;
   trauma = 0;
+  /** Low, slow sway from heavy collapses nearby (the second shake band). */
+  rumbleAmount = 0;
   fovKick = 0;
   accelLag = 0;
   /** 1 = title-screen showcase framing, 0 = gameplay. */
@@ -82,6 +84,11 @@ export class ChaseCamera {
 
   shake(amount: number): void {
     this.trauma = Math.min(1, this.trauma + amount);
+  }
+
+  /** Low-frequency ground rumble: a slow, heavy sway that fades over a couple of seconds. */
+  rumble(amount: number): void {
+    this.rumbleAmount = Math.min(1, this.rumbleAmount + amount);
   }
 
   kick(amount: number): void {
@@ -180,6 +187,12 @@ export class ChaseCamera {
     this.camera.position.copy(position);
     this.camera.position.x += wobble(t, 0.3) * 0.25 * shake;
     this.camera.position.y += wobble(t, 1.7) * 0.25 * shake;
+    // Band two: a heavy low sway (about 2–3 Hz) that outlasts the sharp shake.
+    this.rumbleAmount = Math.max(0, this.rumbleAmount - dt * 0.45);
+    const sway = this.rumbleAmount * this.rumbleAmount;
+    const slow = this.time * 2.6;
+    this.camera.position.y += wobble(slow, 5.3) * 0.55 * sway;
+    this.camera.position.x += wobble(slow, 2.1) * 0.3 * sway;
     this.camera.up.copy(camUp);
     this.camera.lookAt(target);
 

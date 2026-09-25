@@ -31,11 +31,11 @@ export const effectsFeature: Feature = {
   name: 'effects',
   install(ctx) {
     const sceneService = ctx.services.require(SceneToken);
-    const { scene, camera, post, reducedMotion } = sceneService;
+    const { scene, camera, post, reducedMotion, quality } = sceneService;
     const flight = ctx.services.require(FlightToken);
     const rig = ctx.services.require(CameraToken);
     const time = ctx.services.require(TimeScaleToken);
-    const dust = new DustPlumes(340, () => ctx.random.stream('dust').next());
+    const dust = new DustPlumes(quality.dustPuffs, () => ctx.random.stream('dust').next());
     scene.add(dust.mesh);
     const effects = new SpeedEffects(scene, dust);
     const motion = reducedMotion ? 0.35 : 1;

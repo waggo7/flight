@@ -24,7 +24,17 @@ import type { WorldHit } from './rapier-city-world';
 
 declare module '../engine/event-bus' {
   interface GameEventMap {
-    'destruction:damage': { building: number; outcome: DamageOutcome; crushed: WorldPoint[]; point: WorldPoint; generation: number };
+    'destruction:damage': {
+      building: number;
+      outcome: DamageOutcome;
+      crushed: WorldPoint[];
+      point: WorldPoint;
+      generation: number;
+      /** Facade style of what broke (glass towers shed glass). */
+      style: number;
+      /** Which way the hit was going (dust and chips fly that way), or null for crushing under load. */
+      direction: WorldPoint | null;
+    };
     'destruction:strain': { building: number; loadRatio: number; position: WorldPoint };
     'destruction:failure': { building: number; kind: SupportFailure; position: WorldPoint; height: number; mass: number; first: boolean };
     'destruction:impact': { position: WorldPoint; energy: number; mass: number; ground: boolean };
@@ -244,7 +254,11 @@ export class DestructionSystem {
       failed = this.fail(state, verdict.failure.segment, verdict.failure.storey, verdict.failure.kind, report.push, event.generation, touched, crushedPoints);
     }
     for (const segment of touched) this.rebuildSegment(state, segment);
-    this.options.events.emit('destruction:damage', { building, outcome: report.outcome, crushed: crushedPoints, point, generation: event.generation });
+    this.options.events.emit('destruction:damage', {
+      building, outcome: report.outcome, crushed: crushedPoints, point, generation: event.generation,
+      style: structure.segments[report.storeys[0]?.segment ?? 0]!.style,
+      direction: event.shape.type === 'sweep' ? event.shape.direction : null,
+    });
     return { outcome: report.outcome, failed };
   }
 
@@ -783,7 +797,10 @@ export class DestructionSystem {
     body.setLinvel({ x: pre.x * keep, y: pre.y * keep, z: pre.z * keep }, true);
     fragment.preVelocity = { x: pre.x * keep, y: pre.y * keep, z: pre.z * keep };
     fragment.pancakeStoreys++;
-    this.options.events.emit('destruction:damage', { building: fragment.building, outcome: 'crush', crushed: points, point: points[0] ?? fragment.current.position, generation: fragment.generation });
+    this.options.events.emit('destruction:damage', {
+      building: fragment.building, outcome: 'crush', crushed: points, point: points[0] ?? fragment.current.position,
+      generation: fragment.generation, style: structure.segments[target.segment]!.style, direction: null,
+    });
     return true;
   }
 
@@ -879,7 +896,10 @@ export class DestructionSystem {
     const points: WorldPoint[] = [];
     this.spawnDebris(state, ids, null, points);
     for (const segmentIndex of new Set(ids.map((id) => structure.nodes[id]!.segment))) this.rebuildSegment(state, segmentIndex);
-    this.options.events.emit('destruction:damage', { building: fragment.building, outcome: 'crush', crushed: points, point, generation: fragment.generation });
+    this.options.events.emit('destruction:damage', {
+      building: fragment.building, outcome: 'crush', crushed: points, point, generation: fragment.generation,
+      style: structure.segments[structure.nodes[ids[0]!]!.segment]!.style, direction: null,
+    });
   }
 
   /** A falling piece hit another building: it takes a share of the impact (dominoes). */

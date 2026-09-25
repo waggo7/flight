@@ -20,6 +20,8 @@ interface Drawn {
 }
 
 const UP = new Vector3(0, 1, 0);
+/** Metres: debris closer than this to the camera is not drawn. */
+const NEAR_CUTAWAY = 5;
 const matrix = new Matrix4();
 const bodyMatrix = new Matrix4();
 const position = new Vector3();
@@ -55,7 +57,7 @@ export class DestructionView {
   ) {}
 
   /** Apply the system's changes and move loose pieces to their interpolated poses. */
-  sync(alpha: number): void {
+  sync(alpha: number, camera: { x: number; y: number; z: number }): void {
     const changes = this.system.takeChanges();
     if (changes.reset) this.drawn.clear(); // the meshes already released their pools on Restart
     for (const piece of changes.hidden) this.meshes.hidePiece(piece);
@@ -67,6 +69,8 @@ export class DestructionView {
       const p = this.pose;
       bodyMatrix.compose(position.set(p.position.x, p.position.y, p.position.z), rotation.set(p.rotation.x, p.rotation.y, p.rotation.z, p.rotation.w), scale.set(1, 1, 1));
       matrix.multiplyMatrices(bodyMatrix, drawn.local);
+      // Loose pieces right at the lens are cut away, so a hit never fills the screen.
+      if (drawn.item.kind === 'debris' && Math.hypot(p.position.x - camera.x, p.position.y - camera.y, p.position.z - camera.z) < NEAR_CUTAWAY) matrix.makeScale(0, 0, 0);
       if (drawn.item.kind === 'ornament') this.meshes.setPieceMatrix(drawn.item.piece, matrix);
       else drawn.pool?.setMatrix(drawn.slot, matrix);
     }
