@@ -69,7 +69,7 @@ export interface SimulationTuning {
 }
 
 /** One-shot input actions (content/input/actions.json → presses). */
-export type PressAction = 'pause' | 'toggle-view' | 'toggle-sound' | 'restart' | 'toggle-keys' | 'toggle-dev' | 'confirm';
+export type PressAction = 'pause' | 'toggle-view' | 'toggle-sound' | 'restart' | 'toggle-keys' | 'toggle-dev' | 'confirm' | 'slam' | 'grab';
 
 export interface KeyBinding {
   keys: string[];

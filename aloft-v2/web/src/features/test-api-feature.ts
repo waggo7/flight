@@ -9,6 +9,7 @@ import { CityToken } from './city-feature';
 import { ControlsToken } from './controls-feature';
 import { DestructionToken } from './destruction-feature';
 import { EffectsToken } from './effects-feature';
+import { PowersToken } from './powers-feature';
 import { FlightToken } from './flight-feature';
 import { GameFlowToken } from './game-flow-feature';
 import { SceneToken } from './scene-feature';
@@ -39,6 +40,8 @@ export interface TestApi {
   aimAtTower(speed: number, distance?: number): { building: number; yaw: number; point: [number, number, number] } | null;
   /** Hover `distance` m to the side of `point` (looking across `yaw`), facing it. */
   watch(point: [number, number, number], yaw: number, distance?: number): void;
+  /** Press a power's button. */
+  power(name: 'slam' | 'grab'): void;
   /** Offline renders of the collapse recipes, with measurements and WAVs (npm run audio:render). */
   audioBench(): Promise<AudioBenchResult>;
   /** Bury the camera in dust (the engulf check). */
@@ -69,6 +72,7 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
       const city = ctx.services.require(CityToken);
       const destruction = ctx.services.require(DestructionToken);
       const effects = ctx.services.require(EffectsToken);
+      const powers = ctx.services.require(PowersToken);
       window.__aloft = {
         start: () => flow.start(),
         restart: () => flow.restart(),
@@ -114,6 +118,10 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
           rig.snapTo(flight.view);
         },
         audioBench: () => runAudioBench(),
+        power(name) {
+          if (name === 'slam') powers.pressSlam();
+          else powers.pressGrab();
+        },
         engulfInDust() {
           const p = scene.camera.position;
           for (let i = 0; i < 40; i++) effects.dust.puff(p.x + (i % 5 - 2) * 6, p.y + ((i / 5) % 3 - 1) * 5, p.z + (Math.floor(i / 15) - 1) * 6, { size: 22, growth: 1, life: 20, rise: 0, alpha: 0.7, darkness: 0.2 });
@@ -144,6 +152,8 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
             simTime: ctx.loop.simTime,
             steps: ctx.loop.stepCount,
             view: rig.mode,
+            slam: powers.slam.phase,
+            grab: powers.grab.phase,
             colliders: city.physics.world.colliders.len(),
           };
         },

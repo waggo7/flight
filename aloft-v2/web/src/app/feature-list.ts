@@ -13,6 +13,7 @@ import { flightHudFeature } from '../features/flight-hud-feature';
 import { gameFlowFeature } from '../features/game-flow-feature';
 import { heroFeature } from '../features/hero-feature';
 import { hudFeature } from '../features/hud-feature';
+import { powersFeature } from '../features/powers-feature';
 import { sceneFeature } from '../features/scene-feature';
 import { settingsFeature } from '../features/settings-feature';
 import { sparksFeature } from '../features/sparks-feature';
@@ -41,6 +42,7 @@ export function createFeatureList(loop: () => GameLoop): Feature[] {
     audioFeature,
     destructionFeature,
     collapseAudioFeature,
+    powersFeature,
     gameFlowFeature,
     flightHudFeature,
     devOverlayFeature,

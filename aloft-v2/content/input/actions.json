@@ -3,7 +3,7 @@
     "about": "Default bindings shared by the web game and the Godot scaffold. keys = KeyboardEvent.code; gamepadButtons = standard-gamepad indices (0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 Back, 9 Start, 12 D-pad up); mouse = left / right.",
     "axes": "the four directions of the virtual steering stick",
     "holds": "held buttons read every step",
-    "presses": "one-shot actions"
+    "presses": "one-shot actions (slam: ground slam; grab: grab, then throw)"
   },
   "axes": {
     "steer-left": { "keys": ["KeyA", "ArrowLeft"] },
@@ -17,11 +17,13 @@
   },
   "presses": {
     "pause": { "keys": ["Escape", "KeyP"], "gamepadButtons": [9] },
-    "toggle-view": { "keys": ["KeyV", "KeyC"], "gamepadButtons": [3] },
+    "toggle-view": { "keys": ["KeyV", "KeyC"], "gamepadButtons": [12] },
     "toggle-sound": { "keys": ["KeyM"] },
     "restart": { "keys": ["KeyR"], "gamepadButtons": [8] },
     "toggle-keys": { "keys": ["KeyH"] },
     "toggle-dev": { "keys": ["F3", "Backquote"] },
-    "confirm": { "keys": ["Enter", "Space"], "gamepadButtons": [0] }
+    "confirm": { "keys": ["Enter", "Space"], "gamepadButtons": [0] },
+    "slam": { "keys": ["KeyQ"], "gamepadButtons": [3] },
+    "grab": { "keys": ["KeyE", "KeyF"], "gamepadButtons": [2] }
   }
 }

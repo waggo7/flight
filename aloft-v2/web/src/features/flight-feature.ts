@@ -84,6 +84,8 @@ export interface FlightService {
   readonly view: FlightSnapshot;
   /** When false the hero holds still (title screen, pause). */
   active: boolean;
+  /** A power that takes over the hero's motion for a while (the slam dive): return true to skip the flight model this step. */
+  override: ((dt: number) => boolean) | null;
   respawn(position?: Vector3, yaw?: number): void;
   /** Put the hero somewhere mid-flight (test poses and demo scenes). */
   place(position: Vector3, yaw: number, pitch: number, speed: number): void;
@@ -109,6 +111,7 @@ export const flightFeature: Feature = {
       model,
       view,
       active: false,
+      override: null,
       respawn(position = SPAWN_POSITION, yaw = SPAWN_YAW) {
         model.reset(position, yaw);
         current.copyFrom(model);
@@ -136,7 +139,7 @@ export const flightFeature: Feature = {
       phase: StepPhase.Hero,
       step(dt) {
         previous.copyFrom(current);
-        if (service.active) model.update(dt, controls.current);
+        if (service.active && !service.override?.(dt)) model.update(dt, controls.current);
         current.copyFrom(model);
         for (const event of model.takeEvents()) ctx.events.emit('flight:event', event);
       },

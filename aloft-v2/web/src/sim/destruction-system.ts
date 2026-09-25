@@ -97,6 +97,10 @@ interface Fragment {
   /** Storeys (pancake) or edge crushes (topple) so far. */
   pancakeStoreys: number;
   nextEdgeCrush: number;
+  /** Carried by the hero (never frozen or culled). */
+  held: boolean;
+  /** Until then (s), hitting a building damages it: a thrown piece. */
+  projectileUntil: number;
   preVelocity: WorldPoint;
   previous: BodyPose;
   current: BodyPose;
@@ -194,12 +198,12 @@ export class DestructionSystem {
   // ----- damage in ------------------------------------------------------------------------
 
   /** The flight model's smash hook: the hero hit `hit` at `impact` m/s into the surface. */
-  heroHit(hit: WorldHit, point: WorldPoint, velocity: WorldPoint, impact: number): SmashOutcome | null {
+  heroHit(hit: WorldHit, point: WorldPoint, velocity: WorldPoint, impact: number, extraMass = 0): SmashOutcome | null {
     if (!this.enabled || impact < this.tuning.dentSpeed) return null;
     const speed = length3(velocity);
     if (speed < 1e-3) return null;
     const dir = { x: velocity.x / speed, y: velocity.y / speed, z: velocity.z / speed };
-    const { punchMass } = this.tuning;
+    const punchMass = this.tuning.punchMass + extraMass;
     const owner = hit.owner;
 
     if (owner.kind === 'actor' || owner.kind === 'chunk') {
@@ -301,6 +305,131 @@ export class DestructionSystem {
     this.changes = { reset: true, added: [], removed: [], hidden: [] };
     this.time = 0;
     this.failures = 0;
+  }
+
+  // ----- powers ---------------------------------------------------------------------------
+
+  /** Loose pieces whose centre of mass is within `radius` of `point`. */
+  fragmentsNear(point: WorldPoint, radius: number): { body: number; massReal: number; level: FragmentLevel; debris: boolean; centre: WorldPoint }[] {
+    const world = this.physics.world;
+    const out: { body: number; massReal: number; level: FragmentLevel; debris: boolean; centre: WorldPoint }[] = [];
+    for (const f of this.fragments.values()) {
+      const com = world.getRigidBody(f.body).worldCom();
+      if (Math.hypot(com.x - point.x, com.y - point.y, com.z - point.z) <= radius) out.push({ body: f.body, massReal: f.massReal, level: f.level, debris: f.debris, centre: { x: com.x, y: com.y, z: com.z } });
+    }
+    return out;
+  }
+
+  /** Shove loose pieces away from `point`: `speed` m/s at the centre, falling off as (1 − d/R)². */
+  nudge(point: WorldPoint, radius: number, speed: number): void {
+    const world = this.physics.world;
+    for (const near of this.fragmentsNear(point, radius)) {
+      const f = this.fragments.get(near.body)!;
+      if (f.held) continue;
+      this.thaw(f);
+      const d = Math.max(1, Math.hypot(near.centre.x - point.x, near.centre.z - point.z));
+      const falloff = (1 - Math.min(1, d / radius)) ** 2;
+      const push = Math.min(this.tuning.motion.maxPushSpeed * 2, speed * falloff) * f.massSim;
+      world.getRigidBody(f.body).applyImpulse({ x: ((near.centre.x - point.x) / d) * push, y: push * 0.6, z: ((near.centre.z - point.z) / d) * push }, true);
+    }
+  }
+
+  /** Pick up a loose piece: it rides the hero's hold point and no longer touches debris. */
+  hold(bodyHandle: number): boolean {
+    const f = this.fragments.get(bodyHandle);
+    if (!f || f.level === 0) return false;
+    this.thaw(f);
+    const { world, groups, rapier } = this.physics;
+    const body = world.getRigidBody(f.body);
+    if (f.debris) {
+      // Debris becomes a proper chunk: it reports contacts and is never culled for age.
+      f.debris = false;
+      f.level = 2;
+    }
+    for (let i = 0; i < body.numColliders(); i++) {
+      const collider = body.collider(i);
+      collider.setCollisionGroups(groups.held);
+      collider.setActiveEvents(rapier.ActiveEvents.CONTACT_FORCE_EVENTS);
+      collider.setContactForceEventThreshold(3 * 9.81 * f.massSim);
+      const owner = this.physics.ownerOf(collider);
+      if (owner) owner.kind = 'chunk';
+    }
+    body.enableCcd(true);
+    f.held = true;
+    f.hinge = null;
+    return true;
+  }
+
+  /** Let go of a held piece at `velocity`; for `seconds` whatever building it hits takes the blow. */
+  throwHeld(bodyHandle: number, velocity: WorldPoint, seconds: number): void {
+    const f = this.fragments.get(bodyHandle);
+    if (!f) return;
+    const body = this.physics.world.getRigidBody(f.body);
+    for (let i = 0; i < body.numColliders(); i++) body.collider(i).setCollisionGroups(this.physics.groups.chunk);
+    body.setLinvel(velocity, true);
+    f.held = false;
+    f.projectileUntil = this.time + seconds;
+    f.preVelocity = { ...velocity };
+  }
+
+  /** Drop a held piece without throwing it (Restart, grab lost). */
+  releaseHeld(bodyHandle: number): void {
+    const f = this.fragments.get(bodyHandle);
+    if (!f) return;
+    const body = this.physics.world.getRigidBody(f.body);
+    for (let i = 0; i < body.numColliders(); i++) body.collider(i).setCollisionGroups(this.physics.groups.chunk);
+    f.held = false;
+  }
+
+  isLoose(bodyHandle: number): boolean {
+    return this.fragments.has(bodyHandle);
+  }
+
+  massOf(bodyHandle: number): number {
+    return this.fragments.get(bodyHandle)?.massReal ?? 0;
+  }
+
+  /** A piece smashes to rubble (a held chunk rammed into a building, a projectile's hit). */
+  shatter(bodyHandle: number): void {
+    const f = this.fragments.get(bodyHandle);
+    if (!f) return;
+    const state = this.buildings.get(f.building);
+    const centre = { ...this.physics.world.getRigidBody(f.body).worldCom() };
+    const velocity = { ...f.preVelocity };
+    const segment = f.regions[0]?.segment ?? 0;
+    this.removeFragment(f);
+    if (!state) return;
+    const pieces = Math.min(5, Math.max(2, Math.round(Math.cbrt(f.massReal / 30000))));
+    const points: WorldPoint[] = [];
+    for (let i = 0; i < pieces; i++) this.spawnDebrisBody(state, segment, centre, 2.2, velocity, points);
+    this.options.events.emit('destruction:damage', {
+      building: f.building, outcome: 'crush', crushed: points, point: centre, generation: 0,
+      style: state.structure.segments[segment]?.style ?? 1, direction: null,
+    });
+  }
+
+  private projectileHit(fragment: Fragment, building: number, point: WorldPoint): void {
+    const v = fragment.preVelocity;
+    const speed = Math.hypot(v.x, v.y, v.z);
+    fragment.projectileUntil = 0;
+    if (speed < 5) return;
+    const dir = { x: v.x / speed, y: v.y / speed, z: v.z / speed };
+    this.damageBuilding(building, {
+      kind: 'blunt',
+      shape: { type: 'sweep', from: { x: point.x - dir.x * 4, y: point.y - dir.y * 4, z: point.z - dir.z * 4 }, direction: dir, radius: 2.5 },
+      energy: 0.5 * fragment.massReal * speed * speed,
+      speed,
+      impulse: fragment.massReal * speed,
+      generation: 0,
+    }, point);
+    if (this.fragments.has(fragment.body)) this.shatter(fragment.body);
+  }
+
+  private thaw(f: Fragment): void {
+    if (!f.frozen) return;
+    this.physics.world.getRigidBody(f.body).setBodyType(this.physics.rapier.RigidBodyType.Dynamic, true);
+    f.frozen = false;
+    f.asleepFor = 0;
   }
 
   // ----- buildings ------------------------------------------------------------------------
@@ -499,7 +628,7 @@ export class DestructionSystem {
       massReal, massSim, origin: spec.origin, regions: spec.regions, ornaments: spec.ornaments, items: [],
       debris: false, bornAt: this.time, asleepFor: 0, frozen: false,
       breakupEnergy: this.breakupEnergy(structure, spec.level, spec.regions),
-      hinge: null, mode: 'topple', pancakeStoreys: 0, nextEdgeCrush: 0,
+      hinge: null, mode: 'topple', pancakeStoreys: 0, nextEdgeCrush: 0, held: false, projectileUntil: 0,
       preVelocity: { ...spec.linvel },
       previous: { position: { ...spec.pose.position }, rotation: { ...spec.pose.rotation } },
       current: { position: { ...spec.pose.position }, rotation: { ...spec.pose.rotation } },
@@ -599,9 +728,7 @@ export class DestructionSystem {
 
   private spawnDebris(state: BuildingState, nodeIds: readonly number[], event: DamageEvent | null, points: WorldPoint[]): void {
     const { structure } = state;
-    const motion = this.tuning.motion;
     const random = this.options.random();
-    const { rapier, world, groups } = this.physics;
     const dir = event?.shape.type === 'sweep' ? event.shape.direction : null;
     const speed = event?.speed ?? 0;
     for (const id of nodeIds) {
@@ -609,47 +736,52 @@ export class DestructionSystem {
       if (node.state === NodeState.Intact) continue;
       const centre = structure.nodeCentre(node);
       points.push(centre);
-      const segment = structure.segments[node.segment]!;
-      for (let k = 0; k < motion.debrisPerCrushed; k++) {
-        this.enforceDebrisBudget(1);
-        const side = Math.min(4, Math.max(1.5, Math.min(node.x1 - node.x0, node.y1 - node.y0, node.z1 - node.z0) * random.range(0.35, 0.6)));
-        const size = { x: side * random.range(0.8, 1.3), y: side * random.range(0.5, 0.9), z: side * random.range(0.8, 1.3) };
-        const position = { x: centre.x + random.signed() * 2, y: centre.y + random.signed(), z: centre.z + random.signed() * 2 };
+      const side = Math.min(4, Math.max(1.5, Math.min(node.x1 - node.x0, node.y1 - node.y0, node.z1 - node.z0) * random.range(0.35, 0.6)));
+      for (let k = 0; k < this.tuning.motion.debrisPerCrushed; k++) {
         const throwSpeed = dir ? speed * random.range(0.15, 0.4) : 0;
-        const linvel = {
-          x: (dir?.x ?? 0) * throwSpeed + random.signed() * 5,
-          y: (dir?.y ?? 0) * throwSpeed + random.range(0, 5),
-          z: (dir?.z ?? 0) * throwSpeed + random.signed() * 5,
-        };
-        const massReal = size.x * size.y * size.z * 1600;
-        const massSim = solverMass(massReal, motion.solverMassReference);
-        const body = world.createRigidBody(
-          rapier.RigidBodyDesc.dynamic()
-            .setTranslation(position.x, position.y, position.z)
-            .setLinvel(linvel.x, linvel.y, linvel.z)
-            .setAngvel({ x: random.signed() * 3, y: random.signed() * 3, z: random.signed() * 3 })
-            .setDominanceGroup(-1)
-            .setCanSleep(true),
-        );
-        const collider = world.createCollider(
-          rapier.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2)
-            .setDensity(massSim / (size.x * size.y * size.z))
-            .setCollisionGroups(groups.debris)
-            .setFriction(motion.friction),
-          body,
-        );
-        this.physics.own(collider, { kind: 'debris', building: structure.building, id: body.handle });
-        const pose = { position, rotation: { x: 0, y: 0, z: 0, w: 1 } };
-        const fragment: Fragment = {
-          body: body.handle, level: 2, building: structure.building, generation: 99, massReal, massSim,
-          origin: position, regions: [], ornaments: [], items: [], debris: true, bornAt: this.time, asleepFor: 0, frozen: false,
-          breakupEnergy: Infinity, hinge: null, mode: 'topple', pancakeStoreys: 0, nextEdgeCrush: 0, preVelocity: linvel,
-          previous: { position: { ...position }, rotation: { ...pose.rotation } }, current: { position: { ...position }, rotation: { ...pose.rotation } },
-        };
-        fragment.items.push(this.addItem({ kind: 'debris', building: structure.building, segment: segment.index, body: body.handle, size }));
-        this.fragments.set(body.handle, fragment);
+        this.spawnDebrisBody(state, node.segment, centre, side, { x: (dir?.x ?? 0) * throwSpeed, y: (dir?.y ?? 0) * throwSpeed, z: (dir?.z ?? 0) * throwSpeed }, null);
       }
     }
+  }
+
+  /** One debris block of about `side` m near `centre`, flying off with `velocity` plus some scatter. */
+  private spawnDebrisBody(state: BuildingState, segmentIndex: number, centre: WorldPoint, side: number, velocity: WorldPoint, points: WorldPoint[] | null): void {
+    const motion = this.tuning.motion;
+    const random = this.options.random();
+    const { rapier, world, groups } = this.physics;
+    const building = state.structure.building;
+    this.enforceDebrisBudget(1);
+    const size = { x: side * random.range(0.8, 1.3), y: side * random.range(0.5, 0.9), z: side * random.range(0.8, 1.3) };
+    const position = { x: centre.x + random.signed() * 2, y: centre.y + random.signed(), z: centre.z + random.signed() * 2 };
+    points?.push(position);
+    const linvel = { x: velocity.x + random.signed() * 5, y: velocity.y + random.range(0, 5), z: velocity.z + random.signed() * 5 };
+    const massReal = size.x * size.y * size.z * 1600;
+    const massSim = solverMass(massReal, motion.solverMassReference);
+    const body = world.createRigidBody(
+      rapier.RigidBodyDesc.dynamic()
+        .setTranslation(position.x, position.y, position.z)
+        .setLinvel(linvel.x, linvel.y, linvel.z)
+        .setAngvel({ x: random.signed() * 3, y: random.signed() * 3, z: random.signed() * 3 })
+        .setDominanceGroup(-1)
+        .setCanSleep(true),
+    );
+    const collider = world.createCollider(
+      rapier.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2)
+        .setDensity(massSim / (size.x * size.y * size.z))
+        .setCollisionGroups(groups.debris)
+        .setFriction(motion.friction),
+      body,
+    );
+    this.physics.own(collider, { kind: 'debris', building, id: body.handle });
+    const rotation = { x: 0, y: 0, z: 0, w: 1 };
+    const fragment: Fragment = {
+      body: body.handle, level: 2, building, generation: 99, massReal, massSim,
+      origin: position, regions: [], ornaments: [], items: [], debris: true, bornAt: this.time, asleepFor: 0, frozen: false,
+      breakupEnergy: Infinity, hinge: null, mode: 'topple', pancakeStoreys: 0, nextEdgeCrush: 0, held: false, projectileUntil: 0, preVelocity: linvel,
+      previous: { position: { ...position }, rotation: { ...rotation } }, current: { position: { ...position }, rotation: { ...rotation } },
+    };
+    fragment.items.push(this.addItem({ kind: 'debris', building, segment: segmentIndex, body: body.handle, size }));
+    this.fragments.set(body.handle, fragment);
   }
 
   private enforceDebrisBudget(incoming: number): void {
@@ -714,6 +846,11 @@ export class DestructionSystem {
       const point = this.contactPoint(contact.strongest.mine, contact.strongest.other) ?? { ...body.translation() };
       if (energy >= this.tuning.motion.impactEnergy) {
         this.options.events.emit('destruction:impact', { position: point, energy, mass: fragment.massReal, ground: other?.kind === 'ground' });
+      }
+      if (fragment.held) continue;
+      if (fragment.projectileUntil > this.time && other?.kind === 'building') {
+        this.projectileHit(fragment, other.building, point);
+        continue;
       }
       if (other?.kind === 'building' && energy >= this.tuning.motion.impactEnergy) this.knockOn(fragment, other.building, point, energy);
       if (energy >= fragment.breakupEnergy && this.fragments.has(bodyHandle)) this.breakUp(fragment, point);
@@ -950,6 +1087,7 @@ export class DestructionSystem {
     const life = motion.debrisLife[this.options.profile];
     const world = this.physics.world;
     for (const fragment of [...this.fragments.values()]) {
+      if (fragment.held) continue;
       if (fragment.current.position.y < -5 || (fragment.debris && this.time - fragment.bornAt > life)) {
         this.removeFragment(fragment);
         continue;

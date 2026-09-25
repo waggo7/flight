@@ -23,7 +23,7 @@ function hostAddress(): string {
   return '127.0.0.1';
 }
 
-export function serveDist(port = 4180): Promise<{ url: string; server: Server }> {
+export function serveDist(port = Number(process.env.E2E_PORT ?? 4180)): Promise<{ url: string; server: Server }> {
   return serveDirectory(DIST, port);
 }
 

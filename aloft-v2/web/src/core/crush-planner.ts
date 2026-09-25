@@ -22,6 +22,8 @@ export interface DamageEvent {
   impulse: number;
   /** 0 = the hero or a power; +1 for each knock-on (dominoes). */
   generation: number;
+  /** A blast's horizontal push on the part above (sweeps work theirs out from the path). */
+  push?: { x: number; z: number; impulse: number };
 }
 
 export type DamageOutcome = 'none' | 'dent' | 'crush' | 'burst';
@@ -240,7 +242,7 @@ function applySweep(structure: BuildingStructure, event: DamageEvent, shape: Ext
   }
 }
 
-function applyBlast(structure: BuildingStructure, shape: Extract<DamageShape, { type: 'sphere' }>, ledger: DamageLedger): void {
+function applyBlast(structure: BuildingStructure, shape: Extract<DamageShape, { type: 'sphere' }>, ledger: DamageLedger, push: DamageEvent['push']): void {
   const { centre, radius } = shape;
   const blast: Candidate[] = [];
   for (const segment of structure.segments) {
@@ -257,12 +259,13 @@ function applyBlast(structure: BuildingStructure, shape: Extract<DamageShape, { 
   ledger.spend(blast);
   const report = ledger.report;
   report.outcome = report.crushed.length > 0 ? 'crush' : report.weakened.length > 0 ? 'dent' : 'none';
+  if (push && report.energyUsed > 0) report.push = { ...push };
 }
 
 export function applyDamage(structure: BuildingStructure, event: DamageEvent, tuning: DestructionTuning): DamageReport {
   const ledger = new DamageLedger(structure, event.energy);
   if (event.shape.type === 'sweep') applySweep(structure, event, event.shape, ledger, tuning);
-  else applyBlast(structure, event.shape, ledger);
+  else applyBlast(structure, event.shape, ledger, event.push);
   const report = ledger.report;
   const base = (ref: { segment: number; storey: number }): number => {
     const segment = structure.segments[ref.segment]!;

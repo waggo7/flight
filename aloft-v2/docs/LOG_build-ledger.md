@@ -86,3 +86,26 @@ Append-only. One entry per milestone.
   street-grid dust surge after heavy landings; two-band camera shake (sharp + low rumble); slow
   motion, FOV kick and "Timber!" on the first collapse; debris at the lens cut away.
 - e2e: camera buried in dust keeps mean luminance 0.54 / 0.58 (gate 0.15–0.85).
+
+## M5 — Collapse sound (2026-09-25)
+
+- Spatial audio engine (buses, limiter + soft clip, street-canyon reverb thinning with altitude,
+  air absorption, equal-power pan, distance gain, speed-of-sound delay, loudness-priority voice
+  limiter, seeded looping noise, ducking, slow-motion muffle) and eight collapse recipes.
+- `npm run audio:render` (CI): peak −4.0 dBFS, no NaN, roar tail 2.36 s, boom 4.1 s, centroids
+  concrete 501 Hz / glass 4.6 kHz / groan 114 Hz, 32 voices at 1,000 contacts, 1 km arrives
+  +2.77 s and 32.9 dB quieter than 50 m. WAVs sent to the user.
+
+## M7 — Powers (2026-09-25)
+
+- Ground slam (Q / Y / touch): windup, dive at 1.6× boost (or instant near the ground), landing
+  on the street, a roof or a ledge; base crushes with an outward push topple nearby towers away;
+  loose pieces are shoved out; shockwave ring, dust ring, ground boom, two-band shake.
+- Grab and throw (E / X / touch): the best liftable piece ahead rides a spring hold point (it
+  stops touching debris); a second press throws it along the view at +80 m/s; for 5 s it
+  damages what it hits; ramming a building while holding adds its mass and shatters it.
+- Powers HUD (cooldown rings, carry reticle, touch buttons, legend rows), injected at runtime.
+- Gates (sim tests): a full slam in a ring of six towers fails ≥ 3 with knock-ons ≤ generation
+  2; an 80 m/s throw of a rubble chunk topples a 15 m block; ramming shatters the held piece.
+- Conformance vectors for storey layouts, crush plans + support verdicts (16 hits) and the power
+  timelines (`conformance/destruction-and-powers.json`); Godot ports them at pivot time.

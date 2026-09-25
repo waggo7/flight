@@ -4,7 +4,9 @@ import actionsJson from '@content/input/actions.json';
 import inputJson from '@content/tuning/input.json';
 import simulationJson from '@content/tuning/simulation.json';
 import destructionJson from '@content/tuning/destruction.json';
+import powersJson from '@content/tuning/powers.json';
 import type { DestructionTuning } from '../core/destruction-tuning';
+import type { PowersTuning } from '../core/power-timelines';
 import type { CameraTuning, FlightTuning, InputBindings, InputTuning, SimulationTuning } from '../core/flight-tuning';
 import { arr, bool, int, num, obj, optional, str, validated, type Rule, type Shape } from './content-validation';
 
@@ -62,6 +64,17 @@ export const DESTRUCTION_SHAPE: Shape = {
   }),
 };
 
+export const POWERS_SHAPE: Shape = {
+  slam: obj({
+    windup: num(0, 2), recover: num(0, 5), cooldown: num(0, 30), instantBelow: num(0, 200), maxDive: num(0.5, 30),
+    diveSpeedScale: num(0.5, 5), radius: obj({ min: num(1, 200), max: num(1, 400) }), mass: num(1000, 1e7), nudge: num(0, 200),
+  }),
+  grab: obj({
+    reach: num(1, 60), maxMass: num(100, 1e8), holdDistance: num(1, 30), holdHeight: num(-10, 10), holdResponse: num(0.01, 2),
+    throwWindup: num(0, 2), throwSpeed: num(0, 400), projectileSeconds: num(0, 60), carrySpeedShare: num(0.1, 1),
+  }),
+};
+
 const binding: Rule = obj({
   keys: arr(str(), 0, 8),
   mouse: optional(arr(str(['left', 'right']), 0, 2)),
@@ -73,7 +86,7 @@ export const ACTIONS_SHAPE: Shape = {
   holds: obj({ boost: binding, brake: binding }),
   presses: obj({
     pause: binding, 'toggle-view': binding, 'toggle-sound': binding, restart: binding,
-    'toggle-keys': binding, 'toggle-dev': binding, confirm: binding,
+    'toggle-keys': binding, 'toggle-dev': binding, confirm: binding, slam: binding, grab: binding,
   }),
 };
 
@@ -84,6 +97,7 @@ export interface ContentLibrary {
   simulation: SimulationTuning;
   actions: InputBindings;
   destruction: DestructionTuning;
+  powers: PowersTuning;
 }
 
 export function loadContent(): ContentLibrary {
@@ -94,5 +108,6 @@ export function loadContent(): ContentLibrary {
     simulation: validated<SimulationTuning>(simulationJson, SIMULATION_SHAPE, 'content/tuning/simulation.json'),
     actions: validated<InputBindings>(actionsJson, ACTIONS_SHAPE, 'content/input/actions.json'),
     destruction: validated<DestructionTuning>(destructionJson, DESTRUCTION_SHAPE, 'content/tuning/destruction.json'),
+    powers: validated<PowersTuning>(powersJson, POWERS_SHAPE, 'content/tuning/powers.json'),
   };
 }

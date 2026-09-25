@@ -110,6 +110,26 @@ async function runViewport(url: string, viewport: Viewport): Promise<void> {
       await shot('dust');
       console.log(`${viewport}: engulfed in dust, mean luminance ${luminance.toFixed(2)}`);
       expect(luminance >= 0.15 && luminance <= 0.85, `${viewport}: dust veil luminance ${luminance.toFixed(2)} outside 0.15–0.85`);
+      // Ground slam from 150 m up in the street beside a fresh tower.
+      await page.evaluate(() => window.__aloft!.restart());
+      await advance(page, 5, {});
+      const slamTarget = await page.evaluate(() => window.__aloft!.aimAtTower(0, 20));
+      if (slamTarget) {
+        await page.evaluate((t) => {
+          const api = window.__aloft!;
+          api.pose({ position: [t.point[0] - Math.sin(t.yaw) * 14, t.point[1] + 90, t.point[2] - Math.cos(t.yaw) * 14], yaw: t.yaw, speed: 10 });
+          api.power('slam');
+        }, slamTarget);
+        await advance(page, 40, {});
+        await shot('slam-dive');
+        await advance(page, 75, {});
+        const slammed = await page.evaluate(() => window.__aloft!.snapshot);
+        expect(['recover', 'cooldown', 'ready'].includes(slammed.slam as string), `${viewport}: the slam should have landed (phase ${slammed.slam})`);
+        await shot('slam-impact');
+        await page.evaluate((t) => window.__aloft!.watch(t.point, t.yaw, 240), slamTarget);
+        await advance(page, 150, { brake: true });
+        await shot('slam-aftermath');
+      }
       const later = await page.evaluate(() => window.__aloft!.snapshot);
       expect(Number.isFinite((later.position as number[])[1]!), `${viewport}: hero position should stay finite`);
     }
