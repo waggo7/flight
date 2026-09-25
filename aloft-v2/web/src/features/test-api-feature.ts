@@ -6,6 +6,7 @@ import { splitBoxIntoChunks } from '../present/render/city/chunk-instances';
 import { CameraToken } from './camera-feature';
 import { CityToken } from './city-feature';
 import { ControlsToken } from './controls-feature';
+import { DestructionToken } from './destruction-feature';
 import { FlightToken } from './flight-feature';
 import { GameFlowToken } from './game-flow-feature';
 import { SceneToken } from './scene-feature';
@@ -29,6 +30,14 @@ export interface TestApi {
   /** Place the hero mid-flight and snap the camera behind it. */
   pose(pose: TestPose): void;
   render(): void;
+  /**
+   * Line the hero up to smash a tall tower: the first (tallest first) whose face the hero can
+   * reach unobstructed from `distance` m away, hit at 45% of its height. Returns the building id.
+   */
+  aimAtTower(speed: number, distance?: number): { building: number; yaw: number; point: [number, number, number] } | null;
+  /** Hover `distance` m to the side of `point` (looking across `yaw`), facing it. */
+  watch(point: [number, number, number], yaw: number, distance?: number): void;
+  readonly destruction: { fragments: number; bodies: number };
   /** Swap every tower piece within `radius` m (ground plane) of a point for its chunks; returns how many. */
   chunkify(x: number, z: number, radius: number): number;
   readonly state: string;
@@ -52,6 +61,7 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
       const flow = ctx.services.require(GameFlowToken);
       const rig = ctx.services.require(CameraToken);
       const city = ctx.services.require(CityToken);
+      const destruction = ctx.services.require(DestructionToken);
       window.__aloft = {
         start: () => flow.start(),
         restart: () => flow.restart(),
@@ -71,6 +81,33 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
         },
         render() {
           scene.draw();
+        },
+        aimAtTower(speed, distance = 60) {
+          const { physics, blueprint } = city;
+          const towers = blueprint.boxes.filter((b) => b.role === 'tower' && b.collide && b.h > 90 && Math.min(b.w, b.d) > 18).sort((a, b) => b.h - a.h);
+          for (const tower of towers) {
+            // Approach along the tower's local +z (its front face is at local −z).
+            const dir = { x: Math.sin(tower.yaw), y: 0, z: Math.cos(tower.yaw) };
+            const y = tower.y0 + tower.h * 0.45;
+            const face = { x: tower.x - dir.x * tower.d / 2, y, z: tower.z - dir.z * tower.d / 2 };
+            const from = { x: face.x - dir.x * distance, y, z: face.z - dir.z * distance };
+            const hit = physics.world.castRay(new physics.rapier.Ray(from, dir), distance + 5, true, undefined, physics.groups.heroQuery);
+            if (!hit || physics.ownerOf(hit.collider)?.building !== tower.building) continue;
+            const yaw = Math.atan2(dir.x, dir.z);
+            flight.place(new Vector3(from.x, from.y, from.z), yaw, 0, speed);
+            rig.snapTo(flight.view);
+            return { building: tower.building, yaw, point: [face.x, face.y, face.z] };
+          }
+          return null;
+        },
+        watch(point, yaw, distance = 280) {
+          const side = yaw + Math.PI / 2;
+          const from = new Vector3(point[0] - Math.sin(side) * distance + Math.sin(yaw) * 40, point[1] + 30, point[2] - Math.cos(side) * distance + Math.cos(yaw) * 40);
+          flight.respawn(from, side);
+          rig.snapTo(flight.view);
+        },
+        get destruction() {
+          return { fragments: destruction.fragmentCount, bodies: city.physics.world.bodies.len() };
         },
         chunkify(x, z, radius) {
           let count = 0;

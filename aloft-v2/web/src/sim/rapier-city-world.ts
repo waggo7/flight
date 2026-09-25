@@ -2,6 +2,7 @@ import type RAPIER from '@dimforge/rapier3d-compat';
 import type { IslandHeights } from '../core/island-terrain-height';
 import { Vector3 } from '../core/math';
 import type { ColliderOwner, PhysicsWorld } from './physics-world';
+import type { SmashOutcome } from '../core/flight-model';
 import type { GameWorld } from './world-contracts';
 
 // The GameWorld contract over Rapier: the hero is query-only (a swept ball, never a body), the
@@ -22,6 +23,8 @@ export class RapierCityWorld implements GameWorld<WorldHit> {
   /** Buildings the hero just broke through; skipped for a moment so the burst isn't a second hit. */
   private readonly passThrough = new Map<number, number>();
   private clock = 0;
+  /** Set by the destruction feature: what happens when the hero hits something hard enough. */
+  smash?: (hit: WorldHit, point: Vector3, normal: Vector3, velocity: Vector3, impact: number) => SmashOutcome | null;
 
   constructor(
     private readonly physics: PhysicsWorld,

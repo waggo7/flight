@@ -120,6 +120,9 @@ export const flightFeature: Feature = {
         model.yaw = yaw;
         model.pitch = pitch;
         model.speed = speed;
+        model.mode = 'flying';
+        model.hoverBlend = 0;
+        model.velocity.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(speed);
         current.copyFrom(model);
         previous.copyFrom(model);
         view.copyFrom(model);

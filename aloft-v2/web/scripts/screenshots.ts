@@ -75,6 +75,24 @@ async function runViewport(url: string, viewport: Viewport): Promise<void> {
     expect(swapped > 10, `${viewport}: no-pop check should chunk the canyon towers, chunked ${swapped}`);
     expect(noPop.share <= 0.005, `${viewport}: chunking popped ${(noPop.share * 100).toFixed(2)}% of pixels (max 0.5%)`);
     writeFileSync(`${OUT}/${viewport}-no-pop-diff.png`, Buffer.from(noPop.diff.split(',')[1]!, 'base64'));
+    // Destruction: smash a tall tower at full boost, then turn round and hover to watch it go.
+    const target = await page.evaluate(() => window.__aloft!.aimAtTower(108));
+    expect(target !== null, `${viewport}: should find a tower to smash`);
+    if (target) {
+      await advance(page, 40, { boost: true });
+      await shot('smash');
+      const afterHit = await page.evaluate(() => window.__aloft!.destruction);
+      expect(afterHit.fragments > 0, `${viewport}: smashing a tower should break pieces off (fragments ${afterHit.fragments})`);
+      await page.evaluate((t) => window.__aloft!.watch(t.point, t.yaw), target);
+      await advance(page, 180, { brake: true });
+      await shot('topple');
+      await advance(page, 240, { brake: true });
+      await shot('collapse');
+      await advance(page, 300, { brake: true });
+      await shot('rubble');
+      const later = await page.evaluate(() => window.__aloft!.snapshot);
+      expect(Number.isFinite((later.position as number[])[1]!), `${viewport}: hero position should stay finite`);
+    }
     expect(errors.length === 0, `${viewport}: page errors:\n  ${errors.join('\n  ')}`);
   } finally {
     await browser.close();

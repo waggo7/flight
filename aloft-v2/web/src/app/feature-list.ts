@@ -4,6 +4,7 @@ import { audioFeature } from '../features/audio-feature';
 import { cameraFeature } from '../features/camera-feature';
 import { cityFeature } from '../features/city-feature';
 import { controlsFeature } from '../features/controls-feature';
+import { destructionFeature } from '../features/destruction-feature';
 import { devOverlayFeature } from '../features/dev-overlay-feature';
 import { effectsFeature } from '../features/effects-feature';
 import { flightFeature } from '../features/flight-feature';
@@ -37,6 +38,7 @@ export function createFeatureList(loop: () => GameLoop): Feature[] {
     effectsFeature,
     sparksFeature,
     audioFeature,
+    destructionFeature,
     gameFlowFeature,
     flightHudFeature,
     devOverlayFeature,
