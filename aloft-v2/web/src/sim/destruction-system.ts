@@ -1,6 +1,6 @@
 import type RAPIER from '@dimforge/rapier3d-compat';
 import { BuildingStructure, NodeState, type WorldPoint } from '../core/building-structure';
-import type { CityBlueprint, PieceRef } from '../core/city-blueprint';
+import { FacadeStyle, type CityBlueprint, type PieceRef } from '../core/city-blueprint';
 import { applyDamage, type DamageEvent, type DamageOutcome } from '../core/crush-planner';
 import { perStyle, type DestructionTuning } from '../core/destruction-tuning';
 import type { SmashOutcome } from '../core/flight-model';
@@ -38,6 +38,11 @@ declare module '../engine/event-bus' {
     'destruction:strain': { building: number; loadRatio: number; position: WorldPoint };
     'destruction:failure': { building: number; kind: SupportFailure; position: WorldPoint; height: number; mass: number; first: boolean };
     'destruction:impact': { position: WorldPoint; energy: number; mass: number; ground: boolean };
+    /**
+     * The hero hit something breakable. `soaked` = share of the punch's energy the target used up
+     * (0 = paper, 1 = stopped dead): the recoil (speed lost, stagger, camera punch) follows it.
+     */
+    'destruction:hero-hit': { kind: SmashOutcome['kind']; brokeThrough: boolean; soaked: number; point: WorldPoint; direction: WorldPoint; glass: boolean };
   }
 }
 
@@ -215,6 +220,7 @@ export class DestructionSystem {
       body.applyImpulse({ x: dir.x * shove, y: dir.y * shove, z: dir.z * shove }, true);
       if (fragment.level < 2) this.breakUp(fragment, point);
       this.options.onBurst?.(fragment.building);
+      this.options.events.emit('destruction:hero-hit', { kind: 'burst', brokeThrough: true, soaked: 0.4 - 0.12 * fragment.level, point: { ...point }, direction: dir, glass: false });
       return { brokeThrough: true, strength: 0.6, kind: 'burst' };
     }
     if (owner.kind !== 'building') return null;
@@ -232,16 +238,21 @@ export class DestructionSystem {
     const brokeThrough = result.outcome === 'burst';
     if (brokeThrough) this.options.onBurst?.(owner.building);
     const strength = Math.min(1, Math.max(0.2, energy / 3e8));
-    return { brokeThrough, strength, kind: result.failed ? 'topple' : brokeThrough ? 'burst' : 'dent' };
+    const kind = result.failed ? 'topple' : brokeThrough ? 'burst' : 'dent';
+    // Bursting through, the building took what the crush cost; bouncing off, the hero lost the
+    // part of its speed that went into the wall (a glancing scrape barely counts).
+    const soaked = brokeThrough ? Math.min(1, result.energyUsed / energy) : Math.min(1, impact / speed);
+    this.options.events.emit('destruction:hero-hit', { kind, brokeThrough, soaked, point: { ...point }, direction: dir, glass: result.style === FacadeStyle.glass });
+    return { brokeThrough, strength, kind };
   }
 
   /** Any damage event on a building (hero, knock-ons, powers). */
-  damageBuilding(building: number, event: DamageEvent, point: WorldPoint): { outcome: DamageOutcome; failed: boolean } | null {
+  damageBuilding(building: number, event: DamageEvent, point: WorldPoint): { outcome: DamageOutcome; failed: boolean; energyUsed: number; style: number } | null {
     const state = this.buildingState(building);
     if (!state) return null;
     const { structure } = state;
     const report = applyDamage(structure, event, this.tuning);
-    if (report.outcome === 'none') return { outcome: 'none', failed: false };
+    if (report.outcome === 'none') return { outcome: 'none', failed: false, energyUsed: 0, style: structure.segments[0]!.style };
     const touched = new Set(report.storeys.map((s) => s.segment));
     const crushedPoints: WorldPoint[] = [];
     this.spawnDebris(state, report.crushed, event, crushedPoints);
@@ -258,12 +269,12 @@ export class DestructionSystem {
       failed = this.fail(state, verdict.failure.segment, verdict.failure.storey, verdict.failure.kind, report.push, event.generation, touched, crushedPoints);
     }
     for (const segment of touched) this.rebuildSegment(state, segment);
+    const style = structure.segments[report.storeys[0]?.segment ?? 0]!.style;
     this.options.events.emit('destruction:damage', {
-      building, outcome: report.outcome, crushed: crushedPoints, point, generation: event.generation,
-      style: structure.segments[report.storeys[0]?.segment ?? 0]!.style,
+      building, outcome: report.outcome, crushed: crushedPoints, point, generation: event.generation, style,
       direction: event.shape.type === 'sweep' ? event.shape.direction : null,
     });
-    return { outcome: report.outcome, failed };
+    return { outcome: report.outcome, failed, energyUsed: report.energyUsed, style };
   }
 
   // ----- stepping -------------------------------------------------------------------------

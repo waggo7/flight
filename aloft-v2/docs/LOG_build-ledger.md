@@ -109,3 +109,47 @@ Append-only. One entry per milestone.
   2; an 80 m/s throw of a rubble chunk topples a 15 m block; ramming shatters the held piece.
 - Conformance vectors for storey layouts, crush plans + support verdicts (16 hits) and the power
   timelines (`conformance/destruction-and-powers.json`); Godot ports them at pivot time.
+
+## M8 part 1 — First person: free look, comfort, visor feel (2026-09-25)
+
+- Free look (hold F / right stick / two-finger drag) turns the head without changing course and
+  springs back; first person looks along all of the flight pitch; comfort settings (roll share,
+  horizon lock, max FOV, reduced motion); visor droplets, boost vignette, directional wall jolts.
+
+## M9 (WIP) — Demo scenes (2026-09-25)
+
+- Title and pause menus (and `?scenario=`) stage topple, pancake, domino, slam and throw over the
+  real systems; the player steering or boosting takes over. Approaches need a clear 2.5 m corridor.
+
+## Notes sprint — stars out, buildings push back, glass and metal, front view (2026-09-25)
+
+- The collectible spark trails ("stars") are gone: feature, HUD badge and pointer, chimes.
+- Buildings push back (`features/impact-recoil-feature.ts`, `content/tuning/combat.json`): a hero
+  hit reports the share of the punch the target soaked up (real city towers: 0.09–1.0); speed loss
+  (bursting through) or a knock off line (bouncing off), roll, stagger (boost cut, weak steering),
+  hit-stop and camera punch scale with it, then a surge as the hero breaks free; heavy landings
+  nearby rock the hero. The flight model and its conformance vectors are untouched. (A knock off
+  line while still in the tunnel steered the hero into its walls for a second hit that changed the
+  collapse: bursting through keeps the line.)
+- Glass and metal: glass glints (HDR, twinkling), the curtain wall bursting back out at the hit and
+  a glass rain down the face; sparks off torn steel at the hit, from every crushed storey and on
+  heavy contacts. Sound: `glassSmash` and `metalShear` (tearing steel, then the member rings) on
+  hero hits, a long low shear when a frame gives way, scrapes in the rubble.
+- Front view: Shift+V / Shift+C (D-pad ↓) swings the camera round in front of the hero to look
+  back at what it just smashed; V returns to the previous view. Chords live in actions.json
+  (`Shift+KeyV`); Godot's input map registers them with `shift_pressed`.
+- Demo scenes fix (pre-existing): a cut applied its controls a frame late, so the respawned hero
+  took one step on the last shot's boost and launched from its hover into the falling tower;
+  `drive()` now applies controls at once. The topple and domino scenes watch from the vantage again.
+- Next-round prompt (fighting dynamics), as given to the user:
+
+  > Aloft v2 (`aloft-v2/`, branch `claude/compassionate-mendel-ypd9fk`). Read `aloft-v2/AGENTS.md`
+  > and `docs/now.md` first. Goal: fighting dynamics — from "smash buildings" to "superhero fight
+  > in the sky". In order, each playable, tested, committed: (1) dash-punch — a short lunge that
+  > adds punch mass, cooldown ring, recoil through `impact-recoil-feature.ts`; (2) combo meter —
+  > hits within 2.5 s chain, each step adds hit-stop, FOV punch and damage, HUD counter; (3) one
+  > sky enemy that implements `Damageable`, chases, telegraphs a charge, can be punched, grabbed
+  > and thrown into buildings, knock-back both ways, 3–5 at once within budget; (4) hero health
+  > and stagger from enemy hits, a wave loop as a demo scene. Tuning in
+  > `content/tuning/combat.json`; new core modules get conformance vectors; `npm run check` and
+  > `npm run e2e` green; stills of each move on desktop and phone.

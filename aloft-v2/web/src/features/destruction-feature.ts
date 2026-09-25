@@ -44,8 +44,10 @@ export const destructionFeature: Feature = {
     system.enabled = settings.current.destruction;
     settings.onChange((next) => (system.enabled = next.destruction));
     const view = new DestructionView(system, city.meshes, city.blueprint);
-    const collapse = new CollapseEffects(dust, () => ctx.random.stream('collapse-effects').next(), { glass: scene.quality.glassShards, chips: scene.quality.concreteChips });
-    scene.scene.add(collapse.glass.points, collapse.chips.points);
+    const collapse = new CollapseEffects(dust, () => ctx.random.stream('collapse-effects').next(), {
+      glass: scene.quality.glassShards, chips: scene.quality.concreteChips, sparks: scene.quality.metalSparks,
+    });
+    scene.scene.add(collapse.glass.points, collapse.chips.points, collapse.sparks.points);
 
     ctx.systems.addStep({ name: 'destruction-before', phase: StepPhase.DestructionApply, step: () => system.beforeStep() });
     ctx.systems.addStep({ name: 'destruction-after', phase: StepPhase.Contacts, step: (dt) => system.afterStep(dt) });
@@ -66,6 +68,7 @@ export const destructionFeature: Feature = {
     const distanceTo = (p: { x: number; y: number; z: number }): number => Math.hypot(p.x - camera.position.x, p.y - camera.position.y, p.z - camera.position.z);
 
     ctx.events.on('destruction:damage', ({ crushed, style, direction }) => collapse.crushed(crushed, style, direction));
+    ctx.events.on('destruction:hero-hit', ({ point, direction, soaked, glass }) => collapse.heroStrike(point, direction, soaked, glass));
     ctx.events.on('destruction:failure', ({ first }) => {
       if (!first) return;
       hud.toast('Timber!');
@@ -79,6 +82,7 @@ export const destructionFeature: Feature = {
       rig.shake(clamp(loud * 0.2 - distance / 900, 0, 0.7) * fx.motion);
       rig.rumble(clamp(loud * 0.18 - distance / 2500, 0, 0.8) * fx.motion);
       if (ground && energy > 2e7) collapse.groundImpact(position, energy);
+      if (energy > 2e7) collapse.impactSparks(position, energy);
     });
   },
 };

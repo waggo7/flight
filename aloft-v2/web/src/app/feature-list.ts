@@ -14,10 +14,10 @@ import { flightHudFeature } from '../features/flight-hud-feature';
 import { gameFlowFeature } from '../features/game-flow-feature';
 import { heroFeature } from '../features/hero-feature';
 import { hudFeature } from '../features/hud-feature';
+import { impactRecoilFeature } from '../features/impact-recoil-feature';
 import { powersFeature } from '../features/powers-feature';
 import { sceneFeature } from '../features/scene-feature';
 import { settingsFeature } from '../features/settings-feature';
-import { sparksFeature } from '../features/sparks-feature';
 import { createTestApiFeature } from '../features/test-api-feature';
 import { timeScaleFeature } from '../features/time-scale-feature';
 import { worldLookFeature } from '../features/world-look-feature';
@@ -39,11 +39,11 @@ export function createFeatureList(loop: () => GameLoop): Feature[] {
     worldLookFeature,
     heroFeature,
     effectsFeature,
-    sparksFeature,
     audioFeature,
     destructionFeature,
     collapseAudioFeature,
     powersFeature,
+    impactRecoilFeature,
     gameFlowFeature,
     demoScenesFeature,
     flightHudFeature,

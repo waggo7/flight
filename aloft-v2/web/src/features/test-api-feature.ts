@@ -157,6 +157,7 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
             simTime: ctx.loop.simTime,
             steps: ctx.loop.stepCount,
             view: rig.mode,
+            front: rig.front,
             slam: powers.slam.phase,
             grab: powers.grab.phase,
             colliders: city.physics.world.colliders.len(),

@@ -46,12 +46,18 @@ export interface ParticlePoolOptions {
   drag?: number;
   /** Largest point size on screen, in pixels. */
   maxSize?: number;
+  /**
+   * Glints (rad/s): each particle flashes as it tumbles (glass catching the sun, a spark
+   * flickering) instead of glowing steadily. 0 = steady.
+   */
+  twinkle?: number;
 }
 
 export class ParticlePool {
   readonly capacity: number;
   gravity: number;
   drag: number;
+  twinkle: number;
   /** The slot the next `spawn` writes (the oldest particle once the pool has wrapped). */
   cursor = 0;
   readonly positions: Float32Array;
@@ -70,11 +76,13 @@ export class ParticlePool {
   private readonly positionAttribute: BufferAttribute;
   private readonly sizeAttribute: BufferAttribute;
   private readonly alphaAttribute: BufferAttribute;
+  private time = 0;
 
-  constructor({ capacity, color, additive = false, gravity = 0, drag = 0, maxSize = 160 }: ParticlePoolOptions) {
+  constructor({ capacity, color, additive = false, gravity = 0, drag = 0, maxSize = 160, twinkle = 0 }: ParticlePoolOptions) {
     this.capacity = capacity;
     this.gravity = gravity;
     this.drag = drag;
+    this.twinkle = twinkle;
     this.positions = new Float32Array(capacity * 3);
     this.velocities = new Float32Array(capacity * 3);
     this.life = new Float32Array(capacity);
@@ -123,6 +131,7 @@ export class ParticlePool {
    */
   update(dt: number, scale: number): void {
     this.uniforms.uScale.value = scale;
+    this.time += dt;
     const drag = Math.exp(-this.drag * dt);
     for (let i = 0; i < this.capacity; i++) {
       if (this.life[i] <= 0) {
@@ -140,6 +149,11 @@ export class ParticlePool {
       this.positions[k + 2] += this.velocities[k + 2] * dt;
       const t = 1 - Math.max(this.life[i], 0) / this.maxLife[i];
       this.alphas[i] = Math.min(1, t * 8) * (1 - t) * (1 - t);
+      if (this.twinkle > 0) {
+        // Each slot tumbles at its own rate and phase (golden-angle spread): short bright flashes.
+        const glint = 0.5 + 0.5 * Math.sin(i * 2.39996 + this.time * this.twinkle * (0.6 + ((i * 0.618034) % 1) * 0.8));
+        this.alphas[i] *= 0.25 + 1.75 * glint ** 6;
+      }
       this.sizes[i] = this.baseSize[i] * (0.6 + t * 0.9);
     }
     this.positionAttribute.needsUpdate = true;

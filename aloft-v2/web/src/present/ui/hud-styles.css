@@ -429,34 +429,6 @@ input:focus-visible {
   vertical-align: 0.9em;
 }
 
-.sparks {
-  position: absolute;
-  top: calc(var(--gutter) + var(--safe-top));
-  right: calc(var(--gutter) + var(--safe-right));
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  font: 600 1.15rem/1 var(--font-ui);
-  font-variant-numeric: tabular-nums;
-  text-shadow: var(--text-shadow);
-}
-
-.spark-glyph {
-  width: 1rem;
-  height: 1rem;
-  fill: var(--gold);
-  filter: drop-shadow(0 0 8px rgb(255 190 110 / 0.9));
-}
-
-.sparks-total {
-  font-weight: 500;
-  color: var(--ink-faint);
-}
-
-.sparks.is-pulsing .spark-glyph {
-  animation: spark-pulse 700ms var(--ease-out);
-}
-
 .pause-button {
   display: none;
 }
@@ -590,33 +562,6 @@ input:focus-visible {
   border-radius: 50%;
   background: var(--ink);
   box-shadow: 0 0 10px rgb(255 208 150 / 0.9);
-}
-
-.spark-pointer {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 0;
-  opacity: 0;
-  transition: opacity 400ms;
-}
-
-.spark-pointer.is-visible {
-  opacity: 0.9;
-}
-
-.spark-pointer span {
-  position: absolute;
-  left: -8px;
-  top: -8px;
-  width: 16px;
-  height: 16px;
-  border-top: 2px solid var(--gold);
-  border-right: 2px solid var(--gold);
-  border-radius: 1px;
-  transform: rotate(45deg);
-  filter: drop-shadow(0 0 6px rgb(255 190 110 / 0.85));
 }
 
 /* ---------- On-screen controls ---------- */
@@ -827,15 +772,6 @@ input:focus-visible {
 @keyframes fade {
   from {
     opacity: 0;
-  }
-}
-
-@keyframes spark-pulse {
-  30% {
-    transform: scale(1.9) rotate(45deg);
-  }
-  to {
-    transform: scale(1) rotate(90deg);
   }
 }
 

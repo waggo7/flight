@@ -1,0 +1,21 @@
+{
+  "$notes": {
+    "about": "How hits feel (web/src/features/impact-recoil-feature.ts). Buildings push back: every hero hit reports the share of the punch's energy the target soaked up (0 = paper, 1 = stopped dead) and the recoil scales with it.",
+    "speedLoss": "extra share of speed lost bursting through at full soak, on top of flight.smashSpeedKept",
+    "stagger": "seconds of stagger at full soak (boost cut, weak steering): burst = broke through, dent = bounced off",
+    "staggerSteer": "share of steering left during a stagger",
+    "tumble": "rad of roll knocked into the hero at full soak (the flight model's bank springs it back)",
+    "deflect": "rad/s of pitch and yaw rate knocked into the flight path at full soak, bouncing off only (bursting through, the hero keeps its line through the hole)",
+    "hitStop": "seconds of hit-stop for a hero hit: base + perSoak·soak, + topple when the building falls (runs at simulation.hitStop.timeScale)",
+    "cameraPunch": "at full soak: jolt = m the camera is knocked along the hit, fov = degrees it punches in; surge = degrees it kicks out when the stagger ends and the hero breaks free",
+    "blast": "a heavy landing within radius m rocks the hero: rad of roll = energy / reference J × (1 − d/radius)², capped at max, at most every cooldown s"
+  },
+  "speedLoss": 0.4,
+  "stagger": { "burst": 0.3, "dent": 0.5 },
+  "staggerSteer": 0.35,
+  "tumble": 0.5,
+  "deflect": 0.9,
+  "hitStop": { "base": 0.06, "perSoak": 0.1, "topple": 0.06 },
+  "cameraPunch": { "jolt": 0.9, "fov": 6, "surge": 6 },
+  "blast": { "radius": 260, "reference": 2e8, "max": 0.3, "cooldown": 0.25 }
+}

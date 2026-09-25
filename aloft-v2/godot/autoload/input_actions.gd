@@ -14,6 +14,7 @@ const KEY_CODES := {
 const PAD_BUTTONS := {
 	0: JOY_BUTTON_A, 1: JOY_BUTTON_B, 2: JOY_BUTTON_X, 3: JOY_BUTTON_Y, 4: JOY_BUTTON_LEFT_SHOULDER,
 	5: JOY_BUTTON_RIGHT_SHOULDER, 8: JOY_BUTTON_BACK, 9: JOY_BUTTON_START, 12: JOY_BUTTON_DPAD_UP,
+	13: JOY_BUTTON_DPAD_DOWN,
 }
 const PAD_TRIGGERS := {6: JOY_AXIS_TRIGGER_LEFT, 7: JOY_AXIS_TRIGGER_RIGHT}
 
@@ -29,10 +30,15 @@ func _register(action: String, binding: Dictionary) -> void:
 	var name := action.replace("-", "_")
 	if not InputMap.has_action(name):
 		InputMap.add_action(name)
-	for code in binding.get("keys", []):
+	for entry in binding.get("keys", []):
+		# "Shift+KeyV" is a chord: the key with Shift held.
+		var code := String(entry)
+		var shift := code.begins_with("Shift+")
+		code = code.trim_prefix("Shift+")
 		if KEY_CODES.has(code):
 			var key := InputEventKey.new()
 			key.physical_keycode = KEY_CODES[code]
+			key.shift_pressed = shift
 			InputMap.action_add_event(name, key)
 	for index in binding.get("gamepadButtons", []):
 		var i := int(index)

@@ -57,6 +57,9 @@ export const demoScenesFeature: Feature = {
     let playing: ScenarioName | null = null;
     const drive = (next: Partial<FlightControls> | null): void => {
       controls.override = next ? { steerX: 0, steerY: 0, boost: false, brake: false, ...next } : null;
+      // Now, not next frame: after a cut (a respawn to hover) a step on the last shot's controls
+      // would still be boosting, and boosting from a hover launches the hero.
+      if (controls.override) controls.current = { ...controls.override };
     };
     /** Hover off to the side of `point`, looking across `yaw` at it (a cut, like a film). */
     const watch = (point: Point, yaw: number, distance = 260, rise = 40): void => {

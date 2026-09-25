@@ -40,6 +40,8 @@ export class InputControls {
   private readonly touchStarts = new Map<number, { x: number; y: number }>();
   private readonly touchLook = { id: null as number | null, originX: 0, originY: 0, x: 0, y: 0 };
   private readonly lookKeys: ReadonlySet<string>;
+  /** Held keys that stop counting until released (Shift, once it has made a Shift+ chord). */
+  private readonly suppressed = new Set<string>();
   private readonly touchButtons = { boost: false, brake: false };
   private readonly pad = { connected: false, stickX: 0, stickY: 0, lookX: 0, lookY: 0, boost: false, brake: false, previous: [] as boolean[] };
   private authority = 0;
@@ -100,6 +102,7 @@ export class InputControls {
     this.mouse.left = false;
     this.mouse.right = false;
     this.keys.clear();
+    this.suppressed.clear();
     this.touchSteer.id = null;
     this.touchLook.id = null;
     this.touchStarts.clear();
@@ -200,17 +203,25 @@ export class InputControls {
     if (steer || this.boostKeys.has(code) || this.brakeKeys.has(code) || this.lookKeys.has(code)) {
       if (this.enabled || !this.boostKeys.has(code)) e.preventDefault();
       if (down) {
-        this.keys.add(code);
+        if (!this.suppressed.has(code)) this.keys.add(code);
         if (steer) {
           this.mouse.active = false; // a resting cursor must not fight the keys
           this.device = 'keyboard';
         }
       } else {
         this.keys.delete(code);
+        this.suppressed.delete(code);
       }
     }
     if (!down || e.repeat) return;
-    for (const action of this.pressKeys.get(code) ?? []) {
+    // A Shift+ chord wins over the bare key, and Shift stops braking until it's let go.
+    const chord = e.shiftKey ? this.pressKeys.get(`Shift+${code}`) : undefined;
+    if (chord) {
+      for (const shift of ['ShiftLeft', 'ShiftRight']) {
+        if (this.keys.delete(shift)) this.suppressed.add(shift);
+      }
+    }
+    for (const action of chord ?? this.pressKeys.get(code) ?? []) {
       if (action === 'confirm') {
         // Confirm only starts the game; it never fires while flying or when a button has focus.
         if (!this.enabled && !(target instanceof HTMLButtonElement)) this.emit('confirm');

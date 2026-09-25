@@ -37,18 +37,11 @@ export const HUD_MARKUP = /* html */ `
     <p class="readout-primary"><span id="speed-value">0</span><span class="unit">km/h</span></p>
     <p class="readout-secondary"><span id="altitude-value">0</span><span class="unit">m up</span></p>
   </div>
-  <div id="sparks" class="sparks" aria-label="Sparks collected">
-    <svg class="spark-glyph" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M8 0.5l1.6 5.9 5.9 1.6-5.9 1.6L8 15.5l-1.6-5.9L0.5 8l5.9-1.6z" />
-    </svg>
-    <span id="sparks-value">0</span><span class="sparks-total">/&thinsp;<span id="sparks-total">0</span></span>
-  </div>
   <button id="pause-button" class="pause-button" type="button" aria-label="Pause">
     <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="1" /><rect x="9.5" y="2.5" width="3" height="11" rx="1" /></svg>
   </button>
   <p id="hint" class="hint" role="status"></p>
   <p id="toast" class="toast" role="status"></p>
-  <div id="spark-pointer" class="spark-pointer" aria-hidden="true"><span></span></div>
   <div id="reticle" class="reticle" aria-hidden="true">
     <div class="reticle-ring"></div>
     <div id="reticle-line" class="reticle-line"></div>
@@ -102,6 +95,7 @@ export const HUD_MARKUP = /* html */ `
     <div class="key-row"><dt>Boost</dt><dd><kbd>Click</kbd><kbd>Space</kbd></dd></div>
     <div class="key-row"><dt>Hover</dt><dd><kbd>Right-click</kbd><kbd>Shift</kbd></dd></div>
     <div class="key-row"><dt>View</dt><dd><kbd>V</kbd></dd></div>
+    <div class="key-row"><dt>Look back</dt><dd><kbd>Shift</kbd><kbd>V</kbd></dd></div>
     <div class="key-row"><dt>Restart</dt><dd><kbd>R</kbd></dd></div>
     <div class="key-row"><dt>Pause</dt><dd><kbd>Esc</kbd></dd></div>
     <div class="key-row key-row--quiet"><dt>Hide keys</dt><dd><kbd>H</kbd></dd></div>
@@ -110,7 +104,8 @@ export const HUD_MARKUP = /* html */ `
     <div class="key-row"><dt>Steer</dt><dd><kbd>Left stick</kbd></dd></div>
     <div class="key-row"><dt>Boost</dt><dd><kbd>A</kbd><kbd>RT</kbd></dd></div>
     <div class="key-row"><dt>Hover</dt><dd><kbd>B</kbd><kbd>LT</kbd></dd></div>
-    <div class="key-row"><dt>View</dt><dd><kbd>Y</kbd></dd></div>
+    <div class="key-row"><dt>View</dt><dd><kbd>D-pad ↑</kbd></dd></div>
+    <div class="key-row"><dt>Look back</dt><dd><kbd>D-pad ↓</kbd></dd></div>
     <div class="key-row"><dt>Restart</dt><dd><kbd>Back</kbd></dd></div>
     <div class="key-row"><dt>Pause</dt><dd><kbd>Start</kbd></dd></div>
   </dl>

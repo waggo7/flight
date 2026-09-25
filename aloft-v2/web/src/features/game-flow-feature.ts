@@ -128,7 +128,15 @@ export const gameFlowFeature: Feature = {
     input.on('confirm', () => (state === 'title' ? service.start() : service.resume()));
     input.on('pause', () => (state === 'flying' ? service.pause() : service.resume()));
     input.on('restart', restartWithFade);
-    input.on('toggle-view', () => settings.update({ firstPerson: !settings.current.firstPerson }));
+    input.on('toggle-view', () => {
+      // From the front view, V goes back to the view you had.
+      if (rig.front) rig.front = false;
+      else settings.update({ firstPerson: !settings.current.firstPerson });
+    });
+    input.on('front-view', () => {
+      rig.front = !rig.front;
+      if (rig.front && state === 'flying') hud.toast('Front view · Shift+V to go back', 2.2);
+    });
     input.on('toggle-keys', () => settings.update({ showKeys: !settings.current.showKeys }));
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) service.pause();

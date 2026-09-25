@@ -1,10 +1,8 @@
-import { Vector3 } from 'three';
-import type { Camera, Vector3Like } from 'three';
 import { clamp } from '../../core/scalar-math';
 import type { InputDevice } from '../input/input-controls';
 
 // The DOM layer: title and pause screens, a quiet flight HUD, one-at-a-time hints,
-// toasts, the mouse-stick reticle, touch controls and an edge marker for the next spark.
+// toasts, the mouse-stick reticle and touch controls.
 // Ported from v1 (src/hud-overlay.js). The markup comes from mountHudMarkup (hud-markup.ts);
 // `on()` now keeps every handler registered for an event (v1 kept only the last one).
 
@@ -73,9 +71,6 @@ export interface HudFrame {
   readonly device: InputDevice;
   /** True only while flying (not on the title or pause screens). */
   readonly flying: boolean;
-  readonly camera: Camera;
-  /** The next spark to fly to, for the edge-of-screen marker; null when there is none. */
-  readonly nextSpark: Vector3Like | null;
 }
 
 type ElementType<T extends HTMLElement> = { new (): T; prototype: T };
@@ -105,15 +100,11 @@ export class HudOverlay {
   readonly loadingNote: HTMLElement;
   readonly speedValue: HTMLElement;
   readonly altitudeValue: HTMLElement;
-  readonly sparksValue: HTMLElement;
-  readonly sparksTotal: HTMLElement;
-  readonly sparksBadge: HTMLElement;
   readonly hintEl: HTMLElement;
   readonly toastEl: HTMLElement;
   readonly reticle: HTMLElement;
   readonly reticleDot: HTMLElement;
   readonly reticleLine: HTMLElement;
-  readonly pointer: HTMLElement;
   readonly touchControls: HTMLElement;
   readonly touchStick: HTMLElement;
   readonly touchKnob: HTMLElement;
@@ -139,9 +130,6 @@ export class HudOverlay {
     settings: new Set(),
     touchButton: new Set(),
   };
-  private readonly projected = new Vector3();
-  private readonly toSpark = new Vector3();
-  private readonly camForward = new Vector3();
 
   /** `root` is the element mountHudMarkup filled (default: `#app`). */
   constructor(root: HTMLElement = findAppRoot()) {
@@ -158,15 +146,11 @@ export class HudOverlay {
     this.loadingNote = find('loading-note', HTMLElement);
     this.speedValue = find('speed-value', HTMLElement);
     this.altitudeValue = find('altitude-value', HTMLElement);
-    this.sparksValue = find('sparks-value', HTMLElement);
-    this.sparksTotal = find('sparks-total', HTMLElement);
-    this.sparksBadge = find('sparks', HTMLElement);
     this.hintEl = find('hint', HTMLElement);
     this.toastEl = find('toast', HTMLElement);
     this.reticle = find('reticle', HTMLElement);
     this.reticleDot = find('reticle-dot', HTMLElement);
     this.reticleLine = find('reticle-line', HTMLElement);
-    this.pointer = find('spark-pointer', HTMLElement);
     this.touchControls = find('touch-controls', HTMLElement);
     this.touchStick = find('touch-stick', HTMLElement);
     this.touchKnob = find('touch-knob', HTMLElement);
@@ -283,16 +267,6 @@ export class HudOverlay {
     this.startButton.hidden = true;
   }
 
-  setSparks(count: number, total: number, pulse = false): void {
-    this.sparksValue.textContent = String(count);
-    this.sparksTotal.textContent = String(total);
-    if (pulse) {
-      this.sparksBadge.classList.remove('is-pulsing');
-      void this.sparksBadge.offsetWidth;
-      this.sparksBadge.classList.add('is-pulsing');
-    }
-  }
-
   toast(text: string, seconds = 3.2): void {
     this.toastEl.textContent = text;
     this.toastEl.classList.add('is-visible');
@@ -312,7 +286,7 @@ export class HudOverlay {
     this.hintEl.classList.remove('is-visible');
   }
 
-  update(dt: number, { speed, altitude, input, device, flying, camera, nextSpark }: HudFrame): void {
+  update(dt: number, { speed, altitude, input, device, flying }: HudFrame): void {
     this.readoutTimer -= dt;
     if (this.readoutTimer <= 0) {
       this.readoutTimer = 0.1;
@@ -325,7 +299,6 @@ export class HudOverlay {
     }
     this.updateReticle(input, device, flying);
     this.updateTouch(input, device, flying);
-    this.updatePointer(camera, nextSpark, flying);
   }
 
   private updateReticle(input: HudPointerInput, device: InputDevice, flying: boolean): void {
@@ -359,36 +332,5 @@ export class HudOverlay {
     const limit = 52;
     const scale = length > limit ? limit / length : 1;
     this.touchKnob.style.transform = `translate(${dx * scale}px, ${dy * scale}px)`;
-  }
-
-  private updatePointer(camera: Camera, target: Vector3Like | null, flying: boolean): void {
-    if (!flying || !target) {
-      this.pointer.classList.remove('is-visible');
-      return;
-    }
-    const toSpark = this.toSpark.subVectors(target, camera.position);
-    camera.getWorldDirection(this.camForward);
-    const behind = toSpark.dot(this.camForward) < 0;
-    const p = this.projected.copy(target).project(camera);
-    let x = p.x;
-    let y = p.y;
-    const onScreen = !behind && Math.abs(x) < 0.92 && Math.abs(y) < 0.9;
-    if (onScreen) {
-      this.pointer.classList.remove('is-visible');
-      return;
-    }
-    if (behind) {
-      x = -x;
-      y = -y;
-      if (Math.abs(x) < 1e-3 && Math.abs(y) < 1e-3) y = -1;
-    }
-    const scale = 1 / Math.max(Math.abs(x) / 0.9, Math.abs(y) / 0.84, 1e-3);
-    x *= scale;
-    y *= scale;
-    const px = ((x + 1) / 2) * window.innerWidth;
-    const py = ((1 - y) / 2) * window.innerHeight;
-    const angle = Math.atan2(-y, x);
-    this.pointer.style.transform = `translate(${px}px, ${py}px) rotate(${angle}rad)`;
-    this.pointer.classList.add('is-visible');
   }
 }

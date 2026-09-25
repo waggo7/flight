@@ -1,9 +1,9 @@
 {
   "$notes": {
-    "about": "Default bindings shared by the web game and the Godot scaffold. keys = KeyboardEvent.code; gamepadButtons = standard-gamepad indices (0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 Back, 9 Start, 12 D-pad up); mouse = left / right.",
+    "about": "Default bindings shared by the web game and the Godot scaffold. keys = KeyboardEvent.code, or Shift+code for a chord (a chord wins over the bare key's press); gamepadButtons = standard-gamepad indices (0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 Back, 9 Start, 12 D-pad up, 13 D-pad down); mouse = left / right.",
     "axes": "the four directions of the virtual steering stick",
     "holds": "held buttons read every step (look: free look — the mouse turns the head instead of steering; gamepads use the right stick, touch a second finger dragging)",
-    "presses": "one-shot actions (slam: ground slam; grab: grab, then throw)"
+    "presses": "one-shot actions (slam: ground slam; grab: grab, then throw; front-view: the camera swings round in front of the hero to look back at the city behind)"
   },
   "axes": {
     "steer-left": { "keys": ["KeyA", "ArrowLeft"] },
@@ -19,6 +19,7 @@
   "presses": {
     "pause": { "keys": ["Escape", "KeyP"], "gamepadButtons": [9] },
     "toggle-view": { "keys": ["KeyV", "KeyC"], "gamepadButtons": [12] },
+    "front-view": { "keys": ["Shift+KeyV", "Shift+KeyC"], "gamepadButtons": [13] },
     "toggle-sound": { "keys": ["KeyM"] },
     "restart": { "keys": ["KeyR"], "gamepadButtons": [8] },
     "toggle-keys": { "keys": ["KeyH"] },

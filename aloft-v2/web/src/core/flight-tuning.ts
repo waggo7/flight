@@ -77,8 +77,20 @@ export interface SimulationTuning {
   physics: { gravity: number; solverIterations: number; debrisHitsDebris: { desktop: boolean; phone: boolean } };
 }
 
+/** How hits feel: recoil, stagger, hit-stop and camera punch (content/tuning/combat.json). */
+export interface CombatTuning {
+  speedLoss: number;
+  stagger: { burst: number; dent: number };
+  staggerSteer: number;
+  tumble: number;
+  deflect: number;
+  hitStop: { base: number; perSoak: number; topple: number };
+  cameraPunch: { jolt: number; fov: number; surge: number };
+  blast: { radius: number; reference: number; max: number; cooldown: number };
+}
+
 /** One-shot input actions (content/input/actions.json → presses). */
-export type PressAction = 'pause' | 'toggle-view' | 'toggle-sound' | 'restart' | 'toggle-keys' | 'toggle-dev' | 'confirm' | 'slam' | 'grab';
+export type PressAction = 'pause' | 'toggle-view' | 'front-view' | 'toggle-sound' | 'restart' | 'toggle-keys' | 'toggle-dev' | 'confirm' | 'slam' | 'grab';
 
 export interface KeyBinding {
   keys: string[];

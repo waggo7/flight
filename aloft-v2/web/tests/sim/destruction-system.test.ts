@@ -33,6 +33,23 @@ function pieces(scene: ReturnType<typeof destructionScene>) {
 }
 
 describe('destruction in Rapier', () => {
+  test('hero hits report how much of the punch the building soaked up (the recoil follows it)', () => {
+    const glass = destructionScene(rapier, tower30());
+    const hits: { brokeThrough: boolean; soaked: number; glass: boolean }[] = [];
+    glass.events.on('destruction:hero-hit', (hit) => hits.push(hit));
+    glass.heroHit({ x: 0.7, y: 52, z: -80 }, FORWARD, 108);
+    expect(hits).toHaveLength(1);
+    expect(hits[0]).toMatchObject({ brokeThrough: true, glass: true });
+    expect(hits[0]!.soaked).toBeGreaterThan(0.05);
+    expect(hits[0]!.soaked).toBeLessThan(1);
+
+    // Bouncing head-on off a wide stone block: all of it.
+    const stone = destructionScene(rapier, syntheticCity({ boxes: [{ w: 46, d: 46, h: 120, style: FacadeStyle.stone }] }));
+    stone.events.on('destruction:hero-hit', (hit) => hits.push(hit));
+    stone.heroHit({ x: 0.7, y: 52, z: -80 }, FORWARD, 40);
+    expect(hits[1]).toMatchObject({ brokeThrough: false, soaked: 1, glass: false });
+  });
+
   test('30 m glass tower at 55 m/s: bursts through and stands', () => {
     const scene = destructionScene(rapier, tower30());
     const outcome = scene.heroHit({ x: 0.7, y: 52, z: -80 }, FORWARD, 55);

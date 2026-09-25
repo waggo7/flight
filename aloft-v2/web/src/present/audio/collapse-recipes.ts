@@ -8,6 +8,8 @@ import type { AudioEngine, Point3, VoiceInput } from './audio-engine';
 //   rubbleGrains  a Poisson rain of short grains
 //   rumbleBed     looping brown + pink noise, low-passed, that outlasts its drive
 //   glassCascade  a burst of glass modes, and "glass rain" landing √(2h/g) later
+//   glassSmash    a curtain wall bursting: a bright broadband crash, then a glassCascade
+//   metalShear    tearing steel: a screech sliding down in stick-slip grinds, then the member rings
 //   groundBoom    a 55 → 24 Hz sub sweep with a thump and grain spray; ducks the mix
 //   dustWhoosh    a band-passed pink swell as a dust front passes
 
@@ -193,6 +195,62 @@ export function glassCascade(engine: AudioEngine, position: Point3 | null, count
   for (let i = 0; i < pings; i++) modes(v, v.input, v.start + engine.random() * 0.35, 'glass', 0.15 + engine.random() * 0.5, 0.5 + engine.random() * 0.5);
   const rain = Math.min(80, count * 2);
   for (let i = 0; i < rain; i++) modes(v, v.input, v.start + fall + engine.random() * 1.6, 'glass', 0.08 + engine.random() * 0.2, 0.15 + engine.random() * 0.25);
+}
+
+/** A curtain wall bursting right here: a bright crash, then the cascade and the rain. */
+export function glassSmash(engine: AudioEngine, position: Point3 | null, strength: number, height: number): void {
+  const v = engine.voice({ position, bus: 'sfx', gain: 0.55 * strength, reference: 35, duration: 0.7 });
+  if (v) {
+    const { ctx, start } = v;
+    const crash = engine.noiseSource('white');
+    const high = ctx.createBiquadFilter();
+    high.type = 'highpass';
+    high.frequency.value = 2600;
+    const g = ctx.createGain();
+    envelope(g.gain, start, 0.002, 1.2, 0.32);
+    crash.connect(high).connect(g).connect(v.input);
+    crash.start(start, engine.randomOffset());
+    crash.stop(start + 0.5);
+  }
+  glassCascade(engine, position, Math.round(24 + 36 * strength), height);
+}
+
+/**
+ * Tearing steel: pink noise through two tight bands sliding down as the member yields, gated in
+ * uneven stick-slip grinds, then the member rings as it lets go. `size` ≈ 1 for a floor beam,
+ * more for a whole frame (lower and longer).
+ */
+export function metalShear(engine: AudioEngine, position: Point3 | null, strength: number, size = 1): void {
+  const length = (0.45 + 0.7 * strength) * Math.sqrt(Math.max(size, 0.3));
+  const v = engine.voice({ position, bus: 'sfx', gain: 0.4 * strength, reference: 40 + 20 * size, duration: length + 2 });
+  if (!v) return;
+  const { ctx, start } = v;
+  const noise = engine.noiseSource('pink');
+  const grind = ctx.createGain();
+  grind.gain.setValueAtTime(0.0001, start);
+  grind.gain.exponentialRampToValueAtTime(0.9, start + 0.03);
+  let t = start + 0.05;
+  while (t < start + length) {
+    const hold = 0.025 + engine.random() * 0.08;
+    grind.gain.setValueAtTime(0.2 + engine.random() * 0.4, t);
+    grind.gain.linearRampToValueAtTime(0.6 + engine.random() * 0.4, t + hold);
+    t += hold + engine.random() * 0.05;
+  }
+  grind.gain.setValueAtTime(0.5, start + length);
+  grind.gain.exponentialRampToValueAtTime(0.0001, start + length + 0.15);
+  const top = (1800 + engine.random() * 900) / Math.sqrt(Math.max(size, 0.3));
+  for (const ratio of [1, 1.47]) {
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.Q.value = 16;
+    band.frequency.setValueAtTime(top * ratio, start);
+    band.frequency.exponentialRampToValueAtTime(top * ratio * 0.45, start + length);
+    noise.connect(band).connect(grind);
+  }
+  grind.connect(v.input);
+  noise.start(start, engine.randomOffset());
+  noise.stop(start + length + 0.2);
+  modes(v, v.input, start + length * 0.85, 'steel', 0.5 * size, 0.5 * strength);
 }
 
 export function groundBoom(engine: AudioEngine, position: Point3 | null, size: number): void {

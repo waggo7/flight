@@ -87,8 +87,15 @@ async function runViewport(url: string, viewport: Viewport): Promise<void> {
       await shot('smash');
       const afterHit = await page.evaluate(() => window.__aloft!.destruction);
       expect(afterHit.fragments > 0, `${viewport}: smashing a tower should break pieces off (fragments ${afterHit.fragments})`);
+      // Shift+V: the camera swings round in front of the hero to look back at the tower coming down.
+      await page.keyboard.press('Shift+KeyV');
+      await advance(page, 70, { boost: true });
+      expect((await snapshot(page)).front === true, `${viewport}: Shift+V should switch to the front view`);
+      await shot('front-view');
+      await page.keyboard.press('Shift+KeyV');
+      expect((await snapshot(page)).front === false, `${viewport}: Shift+V again should leave the front view`);
       await page.evaluate((t) => window.__aloft!.watch(t.point, t.yaw), target);
-      await advance(page, 180, { brake: true });
+      await advance(page, 110, { brake: true });
       await shot('topple');
       await advance(page, 240, { brake: true });
       await shot('collapse');

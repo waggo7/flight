@@ -9,10 +9,9 @@ import { CameraToken } from './camera-feature';
 import { FlightToken } from './flight-feature';
 import { SceneToken } from './scene-feature';
 import { SettingsToken } from './settings-feature';
-import { TimeScaleToken } from './time-scale-feature';
 
 // How flight feels (v1): air streaks, the launch and sonic-boom shockwaves, impact bursts, sea
-// spray, dust plumes, camera kicks and shakes, the hit-stop on a smash, and the post pass's
+// spray, dust plumes, camera kicks and shakes, and the post pass's
 // speed blur, flash and dust veil.
 
 export interface EffectsService {
@@ -35,7 +34,6 @@ export const effectsFeature: Feature = {
     const { scene, camera, post, reducedMotion, quality } = sceneService;
     const flight = ctx.services.require(FlightToken);
     const rig = ctx.services.require(CameraToken);
-    const time = ctx.services.require(TimeScaleToken);
     const dust = new DustPlumes(quality.dustPuffs, () => ctx.random.stream('dust').next());
     scene.add(dust.mesh);
     const effects = new SpeedEffects(scene, dust);
@@ -54,7 +52,6 @@ export const effectsFeature: Feature = {
       },
     });
 
-    const { hitStop } = ctx.content.simulation;
     ctx.events.on('flight:event', (event) => {
       const model = flight.model;
       const motion = reduced() ? 0.35 : 1;
@@ -77,10 +74,9 @@ export const effectsFeature: Feature = {
           rig.shake((0.25 + event.strength * 0.5) * motion * (1 - rig.firstPersonBlend * 0.7));
           break;
         case 'smash':
-          // A split-second freeze sells the weight of bursting through.
-          time.hitStop(hitStop.seconds * (event.kind === 'topple' ? 1 : 0.5) * motion, hitStop.timeScale);
+          // The hit-stop, knock and camera punch scale with how hard the building pushed back
+          // (impact-recoil-feature); here, the shake and flash of bursting through.
           rig.shake((0.55 + event.strength * 0.4) * motion);
-          rig.kick(7 * motion);
           flash = Math.max(flash, 0.1 * motion);
           break;
         case 'splash':
@@ -91,9 +87,6 @@ export const effectsFeature: Feature = {
         default:
           break;
       }
-    });
-    ctx.events.on('sparks:event', ({ event }) => {
-      if (event.type === 'collect') effects.burstSparks(event.position);
     });
     ctx.events.on('game:restart', () => {
       dust.clear();

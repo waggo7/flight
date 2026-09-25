@@ -2,7 +2,7 @@ import { clamp } from '../../core/scalar-math';
 import type { RandomSource } from '../../core/seeded-noise';
 
 // All sound is synthesised with Web Audio — nothing to download. Wind that rises
-// with speed, a soft evolving pad, and one-shots for boost, shockwave, sparks and bumps.
+// with speed, a soft evolving pad, and one-shots for boost, shockwave, chimes and bumps.
 // Ported from v1 (src/flight-audio.js), same recipes, with fixes:
 // - every noise layer loops a 4 s noise buffer from a random point and stops only once its
 //   duration and its envelope are both over (v1 never looped its 2 s buffer, so long layers such
@@ -350,10 +350,6 @@ export class FlightAudio {
       oscillator.stop(when + 2);
     }
     envelope(gain, 0.22, 0.006, 1.6, when);
-  }
-
-  trailComplete(base = 3): void {
-    for (let i = 0; i < 4; i++) this.chime(base + i, i * 0.09);
   }
 
   whoosh(strength = 1): void {

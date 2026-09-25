@@ -25,7 +25,10 @@ export const cameraFeature: Feature = {
     const rig = ctx.services.provide(CameraToken, new ChaseCamera(camera, ctx.content.camera));
     const freeLook = new FreeLook(ctx.content.camera.freeLook);
     rig.snapTo(flight.view);
-    ctx.events.on('game:restart', () => freeLook.reset());
+    ctx.events.on('game:restart', () => {
+      freeLook.reset();
+      rig.front = false;
+    });
     ctx.systems.addFrame({
       name: 'camera',
       phase: FramePhase.Present,

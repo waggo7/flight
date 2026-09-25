@@ -9,6 +9,8 @@ import type { CameraWorld } from '../../sim/world-contracts';
 // screen. It follows the flight direction (not raw input), leans a little into turns, pulls back
 // and widens with speed, and never ends up inside a wall. Ported from v1 (src/chase-camera.js);
 // M8: free look, look-where-you-fly in first person, and comfort settings (roll, horizon lock, FOV).
+// Front view (Shift+V): the camera swings round in front of the hero and looks back past it, so
+// what it just smashed stays in shot as it comes down.
 
 /** The interpolated flight state the camera frames. */
 export interface CameraSubject {
@@ -51,6 +53,9 @@ export class ChaseCamera {
   clearance = Infinity;
   time = 0;
   firstPersonBlend = 0;
+  /** Front view: in front of the hero looking back at the city behind (any mode; shows the hero). */
+  front = false;
+  frontBlend = 0;
   /** Free-look head turn (rad) on top of the flight direction; the course doesn't change. */
   lookYaw = 0;
   lookPitch = 0;
@@ -120,15 +125,19 @@ export class ChaseCamera {
     const pitchShare = lerp(C.pitchShare, C.firstPersonPitchShare, this.firstPersonBlend);
     this.yaw = dampAngle(this.yaw, flight.yaw + flight.yawRate * C.turnLead, C.yawFollow, dt);
     this.pitch = damp(this.pitch, flight.pitch * pitchShare, C.pitchFollow, dt);
-    this.roll = damp(this.roll, flight.bank * viewRollShare(C.rollShare, this.firstPersonBlend, this.comfort), 3.2, dt);
+    // Front view swings the camera half a turn round the hero (never through it); looking back,
+    // the path ahead is the other way up, and the horizon stays level.
+    this.frontBlend = damp(this.frontBlend, this.front ? 1 : 0, 3.2, dt);
+    const frontMix = easeInOutCubic(clamp(this.frontBlend, 0, 1));
+    this.roll = damp(this.roll, flight.bank * viewRollShare(C.rollShare, this.firstPersonBlend, this.comfort) * (1 - frontMix), 3.2, dt);
     const targetDistance = lerp(lerp(C.distance, C.boostDistance, speedShare), C.hoverDistance, hover);
     this.distance = damp(this.distance, targetDistance, 2.2, dt);
     const forwardAccel = flight.acceleration.dot(flight.forward);
     this.accelLag = damp(this.accelLag, clamp(forwardAccel * 0.035, -1.2, 2.4), 3, dt);
 
     // Free look turns the head (first person) or swings the camera round the hero (chase).
-    const viewYaw = this.yaw + this.lookYaw;
-    const viewPitch = clamp(this.pitch + this.lookPitch, -1.45, 1.45);
+    const viewYaw = this.yaw + this.lookYaw + Math.PI * frontMix;
+    const viewPitch = clamp(this.pitch * (1 - 2 * frontMix) + this.lookPitch, -1.45, 1.45);
     const cosPitch = Math.cos(viewPitch);
     const dir = this.dir.set(Math.sin(viewYaw) * cosPitch, Math.sin(viewPitch), Math.cos(viewYaw) * cosPitch);
     const right = this.right.set(-Math.cos(viewYaw), 0, Math.sin(viewYaw));
@@ -142,7 +151,7 @@ export class ChaseCamera {
     const chaseTarget = this.chaseTarget.copy(flight.position).addScaledVector(dir, C.lookAhead).addScaledVector(up, C.lookLift);
 
     // First person: eyes at the head, which sits forward in flight and up in hover.
-    this.firstPersonBlend = damp(this.firstPersonBlend, this.mode === 'first' ? 1 : 0, 6, dt);
+    this.firstPersonBlend = damp(this.firstPersonBlend, this.mode === 'first' && !this.front ? 1 : 0, 6, dt);
     if (this.firstPersonBlend > 0.001) {
       const fly = 1 - hover;
       const eye = this.pos

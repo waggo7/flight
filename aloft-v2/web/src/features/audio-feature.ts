@@ -80,13 +80,6 @@ export const audioFeature: Feature = {
           break;
       }
     });
-    ctx.events.on('sparks:event', ({ event }) => {
-      const audio = service.flight;
-      if (!audio || event.type !== 'collect') return;
-      audio.chime(event.streak);
-      if (event.allDone) audio.trailComplete(5);
-      else if (event.trailDone) audio.trailComplete(3);
-    });
 
     let wasBoosting = false;
     const right = { x: 1, y: 0, z: 0 };

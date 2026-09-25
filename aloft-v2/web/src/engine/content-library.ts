@@ -5,9 +5,10 @@ import inputJson from '@content/tuning/input.json';
 import simulationJson from '@content/tuning/simulation.json';
 import destructionJson from '@content/tuning/destruction.json';
 import powersJson from '@content/tuning/powers.json';
+import combatJson from '@content/tuning/combat.json';
 import type { DestructionTuning } from '../core/destruction-tuning';
 import type { PowersTuning } from '../core/power-timelines';
-import type { CameraTuning, FlightTuning, InputBindings, InputTuning, SimulationTuning } from '../core/flight-tuning';
+import type { CameraTuning, CombatTuning, FlightTuning, InputBindings, InputTuning, SimulationTuning } from '../core/flight-tuning';
 import { arr, bool, int, num, obj, optional, str, validated, type Rule, type Shape } from './content-validation';
 
 // All engine-neutral content (aloft-v2/content/*.json), validated once at boot. The Godot
@@ -44,6 +45,17 @@ export const SIMULATION_SHAPE: Shape = {
   hitStop: obj({ seconds: num(0, 2), timeScale: num(0, 1) }),
   seed: int(0, 2 ** 31),
   physics: obj({ gravity: num(0, 50), solverIterations: int(1, 16), debrisHitsDebris: obj({ desktop: bool(), phone: bool() }) }),
+};
+
+export const COMBAT_SHAPE: Shape = {
+  speedLoss: num(0, 0.9),
+  stagger: obj({ burst: num(0, 2), dent: num(0, 2) }),
+  staggerSteer: num(0, 1),
+  tumble: num(0, 1.5),
+  deflect: num(0, 5),
+  hitStop: obj({ base: num(0, 1), perSoak: num(0, 1), topple: num(0, 1) }),
+  cameraPunch: obj({ jolt: num(0, 3), fov: num(0, 20), surge: num(0, 20) }),
+  blast: obj({ radius: num(0, 2000), reference: num(1, 1e12), max: num(0, 1.5), cooldown: num(0, 5) }),
 };
 
 const perStyle = (min: number, max: number): Rule => obj({ glass: num(min, max), stone: num(min, max), plain: num(min, max) });
@@ -87,7 +99,7 @@ export const ACTIONS_SHAPE: Shape = {
   axes: obj({ 'steer-left': binding, 'steer-right': binding, 'steer-up': binding, 'steer-down': binding }),
   holds: obj({ boost: binding, brake: binding, look: binding }),
   presses: obj({
-    pause: binding, 'toggle-view': binding, 'toggle-sound': binding, restart: binding,
+    pause: binding, 'toggle-view': binding, 'front-view': binding, 'toggle-sound': binding, restart: binding,
     'toggle-keys': binding, 'toggle-dev': binding, confirm: binding, slam: binding, grab: binding,
   }),
 };
@@ -100,6 +112,7 @@ export interface ContentLibrary {
   actions: InputBindings;
   destruction: DestructionTuning;
   powers: PowersTuning;
+  combat: CombatTuning;
 }
 
 export function loadContent(): ContentLibrary {
@@ -111,5 +124,6 @@ export function loadContent(): ContentLibrary {
     actions: validated<InputBindings>(actionsJson, ACTIONS_SHAPE, 'content/input/actions.json'),
     destruction: validated<DestructionTuning>(destructionJson, DESTRUCTION_SHAPE, 'content/tuning/destruction.json'),
     powers: validated<PowersTuning>(powersJson, POWERS_SHAPE, 'content/tuning/powers.json'),
+    combat: validated<CombatTuning>(combatJson, COMBAT_SHAPE, 'content/tuning/combat.json'),
   };
 }
