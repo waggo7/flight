@@ -24,21 +24,41 @@ export interface Approach {
 const talls = (blueprint: CityBlueprint, minHeight: number, minWidth: number): BoxPiece[] =>
   blueprint.boxes.filter((b) => b.role === 'tower' && b.collide && b.h > minHeight && Math.min(b.w, b.d) > minWidth).sort((a, b) => b.h - a.h);
 
-/** Fly at `tower` along its local +z (or −z) from `distance` m out, hitting it at `heightShare` of its height. */
+/** Metres either side of the flight line that must be clear (the hero is a sphere, not a ray). */
+const CORRIDOR = 2.5;
+
+/**
+ * Fly at `tower` along its local +z (or −z) from `distance` m out, hitting it at `heightShare` of
+ * its height. The whole corridor the hero sweeps must be clear: the centre ray and four rays
+ * offset by CORRIDOR all have to reach this tower first.
+ */
 function approachFor(physics: PhysicsWorld, tower: BoxPiece, distance: number, heightShare: number, reverse = false): Approach | null {
   const sign = reverse ? -1 : 1;
   const direction = { x: Math.sin(tower.yaw) * sign, y: 0, z: Math.cos(tower.yaw) * sign };
+  const side = { x: direction.z, y: 0, z: -direction.x };
   const y = tower.y0 + tower.h * heightShare;
   const face = { x: tower.x - (direction.x * tower.d) / 2, y, z: tower.z - (direction.z * tower.d) / 2 };
   const from = { x: face.x - direction.x * distance, y, z: face.z - direction.z * distance };
-  const hit = physics.world.castRay(new physics.rapier.Ray(from, direction), distance + 5, true, undefined, physics.groups.heroQuery);
-  if (!hit || physics.ownerOf(hit.collider)?.building !== tower.building) return null;
+  for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+    const start = { x: from.x + side.x * dx * CORRIDOR, y: from.y + dy * CORRIDOR, z: from.z + side.z * dx * CORRIDOR };
+    const hit = physics.world.castRay(new physics.rapier.Ray(start, direction), distance + 5, true, undefined, physics.groups.heroQuery);
+    if (!hit || hit.timeOfImpact < 1 || physics.ownerOf(hit.collider)?.building !== tower.building) return null;
+  }
   return { building: tower.building, tower, from, direction, face };
+}
+
+/** The first start distance (farthest first) with a clear corridor. */
+function clearApproach(physics: PhysicsWorld, tower: BoxPiece, distance: number, heightShare: number, reverse = false): Approach | null {
+  for (const d of [distance, distance * 0.8, distance * 0.6]) {
+    const approach = approachFor(physics, tower, d, heightShare, reverse);
+    if (approach) return approach;
+  }
+  return null;
 }
 
 export function findSmashApproach(blueprint: CityBlueprint, physics: PhysicsWorld, distance = 70): Approach | null {
   for (const tower of talls(blueprint, 110, 20)) {
-    const approach = approachFor(physics, tower, distance, 0.42);
+    const approach = clearApproach(physics, tower, distance, 0.42);
     if (approach) return approach;
   }
   return null;
@@ -48,7 +68,7 @@ export function findSmashApproach(blueprint: CityBlueprint, physics: PhysicsWorl
 export function findDominoApproach(blueprint: CityBlueprint, physics: PhysicsWorld, distance = 70): (Approach & { next: number }) | null {
   for (const tower of talls(blueprint, 120, 20)) {
     for (const reverse of [false, true]) {
-      const approach = approachFor(physics, tower, distance, 0.42, reverse);
+      const approach = clearApproach(physics, tower, distance, 0.42, reverse);
       if (!approach) continue;
       // What stands in the way of the fall, beyond the far face, at a third of the tower's height.
       const d = approach.direction;
