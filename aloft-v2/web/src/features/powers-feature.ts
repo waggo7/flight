@@ -1,10 +1,12 @@
-import { Vector3 } from 'three';
+import { AdditiveBlending, Color, Mesh, MeshBasicMaterial, RingGeometry, Vector3 } from 'three';
 import { clamp } from '../core/scalar-math';
 import type { Feature } from '../engine/game-context';
 import { serviceToken } from '../engine/service-registry';
 import { StepPhase, FramePhase } from '../engine/system-phases';
 import { crack, groundBoom, modalImpact, rubbleGrains } from '../present/audio/collapse-recipes';
 import { PowersHud } from '../present/ui/powers-hud';
+import { VisorHud } from '../present/ui/visor-hud';
+import { viewVisibility } from '../core/view-state';
 import { PowerSystem } from '../sim/power-system';
 import { AudioToken } from './audio-feature';
 import { CameraToken } from './camera-feature';
@@ -29,10 +31,11 @@ export const powersFeature: Feature = {
     const flight = ctx.services.require(FlightToken);
     const controls = ctx.services.require(ControlsToken);
     const destruction = ctx.services.require(DestructionToken);
-    const { effects, dust, motion } = ctx.services.require(EffectsToken);
+    const fx = ctx.services.require(EffectsToken);
+    const { effects, dust } = fx;
     const rig = ctx.services.require(CameraToken);
     const audio = ctx.services.require(AudioToken);
-    const { camera } = ctx.services.require(SceneToken);
+    const { camera, scene } = ctx.services.require(SceneToken);
 
     const powers = new PowerSystem(city.physics, city.world, destruction, city.blueprint, flight.model, ctx.content.flight, ctx.content.powers, ctx.events);
     ctx.services.provide(PowersToken, powers);
@@ -52,10 +55,19 @@ export const powersFeature: Feature = {
       else powers.pressGrab();
     });
     const aim = new Vector3();
+    const visor = new VisorHud(document.getElementById('app') ?? document.body);
+    const grabTarget = new Vector3();
+    const marker = new Mesh(
+      new RingGeometry(3.2, 4.2, 48).rotateX(-Math.PI / 2),
+      new MeshBasicMaterial({ color: new Color(4, 1.6, 0.6), transparent: true, opacity: 0.7, depthWrite: false, blending: AdditiveBlending }),
+    );
+    marker.visible = false;
+    marker.renderOrder = 5;
+    scene.add(marker);
     ctx.systems.addFrame({
       name: 'powers-aim',
       phase: FramePhase.Present,
-      frame() {
+      frame(realDt) {
         camera.getWorldDirection(aim);
         powers.aim.copy(aim);
         hud.update({
@@ -64,6 +76,24 @@ export const powersFeature: Feature = {
           holding: powers.held !== null,
           grabBusy: powers.grab.phase === 'windup' || powers.grab.phase === 'release',
         });
+        const candidate = flight.active ? powers.grabCandidate() : null;
+        visor.update({
+          visibility: viewVisibility(rig.firstPersonBlend).arms,
+          speed: flight.view.speed,
+          altitude: flight.view.groundClearance,
+          slamCooldown: powers.slam.cooldownShare,
+          holding: powers.held !== null,
+          grabTarget: candidate ? grabTarget.set(candidate.centre.x, candidate.centre.y, candidate.centre.z) : null,
+          camera,
+        });
+        // The slam's landing spot, projected on the ground while it winds up and dives.
+        const landing = powers.slamMarker();
+        marker.visible = landing !== null;
+        if (landing) {
+          marker.position.set(landing.x, landing.y, landing.z);
+          marker.rotation.z += realDt * 2.5;
+          (marker.material as MeshBasicMaterial).opacity = 0.55 + 0.25 * Math.sin(ctx.loop.simTime * 18);
+        }
       },
     });
     ctx.events.on('game:restart', () => powers.reset());
@@ -71,7 +101,7 @@ export const powersFeature: Feature = {
     const up = new Vector3(0, 1, 0);
     const at = new Vector3();
     ctx.events.on('power:dive', () => {
-      rig.kick(6 * motion);
+      rig.kick(6 * fx.motion);
       audio.flight?.whoosh(1);
     });
     ctx.events.on('power:slam', ({ position, radius }) => {
@@ -84,9 +114,9 @@ export const powersFeature: Feature = {
           size: 8 + 8 * share, growth: 3, life: 6, rise: 0.4, vx: Math.cos(a) * (10 + 14 * share), vz: Math.sin(a) * (10 + 14 * share), alpha: 0.55, darkness: 0.15,
         });
       }
-      rig.shake((0.5 + 0.4 * share) * motion);
-      rig.rumble(0.7 * share * motion);
-      rig.kick(8 * share * motion);
+      rig.shake((0.5 + 0.4 * share) * fx.motion);
+      rig.rumble(0.7 * share * fx.motion);
+      rig.kick(8 * share * fx.motion);
       const engine = audio.engine;
       if (engine) {
         groundBoom(engine, position, 120 + 180 * share);
@@ -99,7 +129,7 @@ export const powersFeature: Feature = {
     });
     ctx.events.on('power:throw', () => {
       audio.flight?.whoosh(0.8);
-      rig.kick(3 * motion);
+      rig.kick(3 * fx.motion);
     });
   },
 };

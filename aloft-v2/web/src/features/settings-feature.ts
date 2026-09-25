@@ -11,10 +11,16 @@ export interface PlayerSettings {
   sound: boolean;
   showKeys: boolean;
   destruction: boolean;
+  /** Comfort (M8): first-person roll share, level horizon, FOV cap (degrees), reduced motion. */
+  rollShare: number;
+  horizonLock: boolean;
+  maxFov: number;
+  reducedMotion: boolean;
 }
 
 export const DEFAULT_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   sensitivity: 1, invertY: false, firstPerson: false, sound: true, showKeys: true, destruction: true,
+  rollShare: 0.5, horizonLock: false, maxFov: 90, reducedMotion: false,
 });
 
 export interface SettingsService {
@@ -37,6 +43,8 @@ export function sanitizeSettings(raw: unknown): PlayerSettings {
     if (typeof value === typeof DEFAULT_SETTINGS[key]) (settings as unknown as Record<string, unknown>)[key] = value;
   }
   settings.sensitivity = Math.min(2, Math.max(0.4, Number.isFinite(settings.sensitivity) ? settings.sensitivity : 1));
+  settings.rollShare = Math.min(1, Math.max(0, Number.isFinite(settings.rollShare) ? settings.rollShare : 0.5));
+  settings.maxFov = Math.min(110, Math.max(60, Number.isFinite(settings.maxFov) ? settings.maxFov : 90));
   return settings;
 }
 

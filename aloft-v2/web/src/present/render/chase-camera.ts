@@ -2,12 +2,13 @@ import { Spherical, Vector3 } from 'three';
 import type { PerspectiveCamera, Quaternion } from 'three';
 import type { CameraTuning } from '../../core/flight-tuning';
 import { clamp, damp, dampAngle, easeInOutCubic, lerp, wrapAngle } from '../../core/scalar-math';
+import { DEFAULT_COMFORT, viewRollShare, type ComfortSettings } from '../../core/view-state';
 import type { CameraWorld } from '../../sim/world-contracts';
 
 // Third-person chase camera with a first-person option and a showcase framing for the title
 // screen. It follows the flight direction (not raw input), leans a little into turns, pulls back
 // and widens with speed, and never ends up inside a wall. Ported from v1 (src/chase-camera.js);
-// M8 adds free look, comfort settings and first-person arms.
+// M8: free look, look-where-you-fly in first person, and comfort settings (roll, horizon lock, FOV).
 
 /** The interpolated flight state the camera frames. */
 export interface CameraSubject {
@@ -50,6 +51,12 @@ export class ChaseCamera {
   clearance = Infinity;
   time = 0;
   firstPersonBlend = 0;
+  /** Free-look head turn (rad) on top of the flight direction; the course doesn't change. */
+  lookYaw = 0;
+  lookPitch = 0;
+  comfort: ComfortSettings = { ...DEFAULT_COMFORT };
+  /** A quick directional knock (glancing off a wall) that springs back. */
+  private readonly joltOffset = new Vector3();
 
   private readonly dir = new Vector3();
   private readonly right = new Vector3();
@@ -91,6 +98,14 @@ export class ChaseCamera {
     this.rumbleAmount = Math.min(1, this.rumbleAmount + amount);
   }
 
+  /** Knock the view along `direction` (a wall's normal): a directional jolt instead of random shake. */
+  jolt(direction: { x: number; y: number; z: number }, amount: number): void {
+    this.joltOffset.x += direction.x * amount * 0.45;
+    this.joltOffset.y += direction.y * amount * 0.45;
+    this.joltOffset.z += direction.z * amount * 0.45;
+    this.joltOffset.clampLength(0, 0.6);
+  }
+
   kick(amount: number): void {
     this.fovKick = Math.min(14, this.fovKick + amount);
   }
@@ -101,17 +116,22 @@ export class ChaseCamera {
     const speedShare = flight.speedShare;
     const hover = flight.hoverBlend;
 
+    // First person looks where you fly (all of the pitch) and rolls by the comfort setting.
+    const pitchShare = lerp(C.pitchShare, C.firstPersonPitchShare, this.firstPersonBlend);
     this.yaw = dampAngle(this.yaw, flight.yaw + flight.yawRate * C.turnLead, C.yawFollow, dt);
-    this.pitch = damp(this.pitch, flight.pitch * C.pitchShare, C.pitchFollow, dt);
-    this.roll = damp(this.roll, flight.bank * C.rollShare, 3.2, dt);
+    this.pitch = damp(this.pitch, flight.pitch * pitchShare, C.pitchFollow, dt);
+    this.roll = damp(this.roll, flight.bank * viewRollShare(C.rollShare, this.firstPersonBlend, this.comfort), 3.2, dt);
     const targetDistance = lerp(lerp(C.distance, C.boostDistance, speedShare), C.hoverDistance, hover);
     this.distance = damp(this.distance, targetDistance, 2.2, dt);
     const forwardAccel = flight.acceleration.dot(flight.forward);
     this.accelLag = damp(this.accelLag, clamp(forwardAccel * 0.035, -1.2, 2.4), 3, dt);
 
-    const cosPitch = Math.cos(this.pitch);
-    const dir = this.dir.set(Math.sin(this.yaw) * cosPitch, Math.sin(this.pitch), Math.cos(this.yaw) * cosPitch);
-    const right = this.right.set(-Math.cos(this.yaw), 0, Math.sin(this.yaw));
+    // Free look turns the head (first person) or swings the camera round the hero (chase).
+    const viewYaw = this.yaw + this.lookYaw;
+    const viewPitch = clamp(this.pitch + this.lookPitch, -1.45, 1.45);
+    const cosPitch = Math.cos(viewPitch);
+    const dir = this.dir.set(Math.sin(viewYaw) * cosPitch, Math.sin(viewPitch), Math.cos(viewYaw) * cosPitch);
+    const right = this.right.set(-Math.cos(viewYaw), 0, Math.sin(viewYaw));
     const up = this.upAxis.crossVectors(right, dir);
 
     // Chase framing: hero in the lower-middle of the frame, horizon visible.
@@ -187,6 +207,8 @@ export class ChaseCamera {
     this.camera.position.copy(position);
     this.camera.position.x += wobble(t, 0.3) * 0.25 * shake;
     this.camera.position.y += wobble(t, 1.7) * 0.25 * shake;
+    this.joltOffset.multiplyScalar(Math.exp(-9 * dt));
+    this.camera.position.add(this.joltOffset);
     // Band two: a heavy low sway (about 2–3 Hz) that outlasts the sharp shake.
     this.rumbleAmount = Math.max(0, this.rumbleAmount - dt * 0.45);
     const sway = this.rumbleAmount * this.rumbleAmount;
@@ -200,7 +222,7 @@ export class ChaseCamera {
     const chaseFov = lerp(C.fov, C.boostFov, speedShare);
     const baseFov = lerp(chaseFov, C.firstPersonFov + speedShare * 10, this.firstPersonBlend);
     const introFov = lerp(40, 52, clamp((1.15 - this.camera.aspect) / 0.6, 0, 1));
-    const fov = lerp(baseFov, introFov, introMix) + this.fovKick;
+    const fov = Math.min(lerp(baseFov, introFov, introMix) + this.fovKick, Math.max(this.comfort.maxFov, 40));
     this.camera.near = this.firstPersonBlend > 0.5 ? 0.12 : 0.3;
     if (Math.abs(fov - this.camera.fov) > 0.01 || this.camera.near !== this.lastNear) {
       this.camera.fov = fov;

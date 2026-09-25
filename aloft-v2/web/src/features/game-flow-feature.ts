@@ -5,6 +5,7 @@ import { FramePhase } from '../engine/system-phases';
 import { CameraToken } from './camera-feature';
 import { ControlsToken } from './controls-feature';
 import { FlightToken } from './flight-feature';
+import { mountComfortSettings } from '../present/ui/comfort-settings';
 import { HudToken } from './hud-feature';
 import { SettingsToken, type PlayerSettings } from './settings-feature';
 import { TimeScaleToken } from './time-scale-feature';
@@ -111,6 +112,7 @@ export const gameFlowFeature: Feature = {
       input.sensitivity = current.sensitivity;
       input.invertY = current.invertY;
       rig.setMode(current.firstPerson ? 'first' : 'chase');
+      rig.comfort = { rollShare: current.rollShare, horizonLock: current.horizonLock, maxFov: current.maxFov, reducedMotion: current.reducedMotion };
       hud.applySettings(current);
     };
     applySettings(settings.current);
@@ -121,6 +123,7 @@ export const gameFlowFeature: Feature = {
     hud.on('pause', () => service.pause());
     hud.on('restart', restartWithFade);
     hud.on('settings', (next) => settings.update(next));
+    mountComfortSettings(document.getElementById('app') ?? document.body, settings.current, (changes) => settings.update(changes));
     hud.on('touchButton', (name, pressed) => input.setTouchButton(name, pressed));
     input.on('confirm', () => (state === 'title' ? service.start() : service.resume()));
     input.on('pause', () => (state === 'flying' ? service.pause() : service.resume()));

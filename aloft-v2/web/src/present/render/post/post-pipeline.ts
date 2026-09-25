@@ -89,6 +89,7 @@ uniform float uGrain;
 uniform float uContrast;
 uniform float uFlash;
 uniform float uTime;
+uniform float uDroplets;
 varying vec2 vUv;
 
 vec3 RRTAndODTFit(vec3 v) {
@@ -123,9 +124,37 @@ float hash(vec2 p) {
   return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
+// Visor droplets (first person, skimming the sea): beads that bend the view and catch a glint.
+// uDroplets 0..1 is both how many cells hold a bead and how strong they are.
+vec2 dropletOffset(vec2 uv, float aspect, out float glint) {
+  glint = 0.0;
+  vec2 offset = vec2(0.0);
+  if (uDroplets < 0.01) return offset;
+  vec2 p = vec2(uv.x * aspect, uv.y) * 9.0;
+  vec2 cell = floor(p);
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 c = cell + vec2(float(i), float(j));
+      if (hash(c) > uDroplets * 0.8) continue;
+      vec2 centre = c + vec2(hash(c + 1.7), hash(c + 4.3));
+      float radius = 0.1 + 0.26 * hash(c + 9.1);
+      vec2 d = p - centre;
+      float r = length(d) / radius;
+      if (r < 1.0) {
+        float bulge = sqrt(1.0 - r * r);
+        offset -= d / 9.0 * bulge * 0.7 / vec2(aspect, 1.0);
+        glint = max(glint, smoothstep(0.3, 0.0, length(d / radius - vec2(-0.35, 0.4))) * bulge);
+      }
+    }
+  }
+  return offset;
+}
+
 void main() {
-  vec2 uv = vUv;
-  vec2 fromCenter = uv - 0.5;
+  float aspect = uResolution.x / uResolution.y;
+  float glint;
+  vec2 uv = vUv + dropletOffset(vUv, aspect, glint);
+  vec2 fromCenter = vUv - 0.5;
   float edge = dot(fromCenter, fromCenter);
 
   vec3 color;
@@ -148,9 +177,9 @@ void main() {
   color = mix(color, uDustColor, uDust);
   color = mix(color, uCloudColor, uCloud);
   color += vec3(uFlash);
+  color += vec3(glint * 0.8 * uDroplets);
   color *= uExposure;
 
-  float aspect = uResolution.x / uResolution.y;
   float vignette = smoothstep(1.15, 0.35, length(fromCenter * vec2(aspect, 1.0)) * 1.1);
   color *= mix(1.0 - uVignette, 1.0, vignette);
 
@@ -186,6 +215,8 @@ export type PostSettings = {
   uFlash: IUniform<number>;
   /** Seconds; animates the film grain. */
   uTime: IUniform<number>;
+  /** 0..1: water beads on the visor (first person). */
+  uDroplets: IUniform<number>;
 };
 
 type InputUniforms = {
@@ -269,6 +300,7 @@ export class PostPipeline {
       uContrast: { value: 0.16 },
       uFlash: { value: 0 },
       uTime: { value: 0 },
+      uDroplets: { value: 0 },
     };
     this.composite = pass(compositeFragment, this.settings);
 

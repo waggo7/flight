@@ -51,6 +51,10 @@ async function runViewport(url: string, viewport: Viewport): Promise<void> {
     await advance(page, 60, { boost: true });
     expect((await snapshot(page)).view === 'first', `${viewport}: V should switch to first person`);
     await shot('first-person');
+    // Skimming the sea in first person: spray beads on the visor.
+    await page.evaluate(() => window.__aloft!.pose({ position: [-1700, 5, -800], yaw: -2.0, speed: 95 }));
+    await advance(page, 110, { boost: true });
+    await shot('first-person-sea');
     await page.keyboard.press('KeyV');
 
     await advance(page, 240, { brake: true });

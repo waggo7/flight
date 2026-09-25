@@ -27,6 +27,8 @@ export class InputControls {
   sensitivity = 1;
   device: InputDevice;
 
+  /** Free look: while active the head turns (x right, y up, −1..1) and the course holds. */
+  readonly look = { active: false, x: 0, y: 0 };
   /** Read by the HUD for the reticle. */
   readonly mouse = { x: 0, y: 0, inside: false, active: false, left: false, right: false, stickX: 0, stickY: 0 };
   private readonly keys = new Set<string>();
@@ -34,8 +36,12 @@ export class InputControls {
   /** Read by the HUD for the thumb stick. */
   readonly touchSteer = { id: null as number | null, originX: 0, originY: 0, x: 0, y: 0, stickX: 0, stickY: 0 };
   private readonly touchBoostPointers = new Set<number>();
+  /** A second finger that started dragging instead of holding still turns into a look stick. */
+  private readonly touchStarts = new Map<number, { x: number; y: number }>();
+  private readonly touchLook = { id: null as number | null, originX: 0, originY: 0, x: 0, y: 0 };
+  private readonly lookKeys: ReadonlySet<string>;
   private readonly touchButtons = { boost: false, brake: false };
-  private readonly pad = { connected: false, stickX: 0, stickY: 0, boost: false, brake: false, previous: [] as boolean[] };
+  private readonly pad = { connected: false, stickX: 0, stickY: 0, lookX: 0, lookY: 0, boost: false, brake: false, previous: [] as boolean[] };
   private authority = 0;
   private readonly handlers = new Map<InputAction, (() => void)[]>();
   private readonly steerKeys = new Map<string, readonly [number, number]>();
@@ -61,6 +67,7 @@ export class InputControls {
     }
     this.boostKeys = new Set(bindings.holds.boost.keys);
     this.brakeKeys = new Set(bindings.holds.brake.keys);
+    this.lookKeys = new Set(bindings.holds.look.keys);
     for (const [action, binding] of Object.entries(bindings.presses) as [InputAction, InputBindings['presses'][InputAction]][]) {
       for (const code of binding.keys) this.pressKeys.set(code, [...(this.pressKeys.get(code) ?? []), action]);
       for (const index of binding.gamepadButtons ?? []) this.pressButtons.set(index, [...(this.pressButtons.get(index) ?? []), action]);
@@ -94,6 +101,8 @@ export class InputControls {
     this.mouse.right = false;
     this.keys.clear();
     this.touchSteer.id = null;
+    this.touchLook.id = null;
+    this.touchStarts.clear();
     this.touchBoostPointers.clear();
     this.touchButtons.boost = false;
     this.touchButtons.brake = false;
@@ -130,6 +139,7 @@ export class InputControls {
       steer.originY = steer.y = e.clientY;
     } else {
       this.touchBoostPointers.add(e.pointerId);
+      this.touchStarts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     }
   }
 
@@ -141,6 +151,17 @@ export class InputControls {
     if (e.pointerId === this.touchSteer.id) {
       this.touchSteer.x = e.clientX;
       this.touchSteer.y = e.clientY;
+      return;
+    }
+    const start = this.touchStarts.get(e.pointerId);
+    if (start && this.touchLook.id === null && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 24) {
+      // A dragging second finger looks around rather than boosting.
+      this.touchBoostPointers.delete(e.pointerId);
+      Object.assign(this.touchLook, { id: e.pointerId, originX: start.x, originY: start.y });
+    }
+    if (e.pointerId === this.touchLook.id) {
+      this.touchLook.x = e.clientX;
+      this.touchLook.y = e.clientY;
     }
   }
 
@@ -151,7 +172,9 @@ export class InputControls {
       return;
     }
     if (e.pointerId === this.touchSteer.id) this.touchSteer.id = null;
+    if (e.pointerId === this.touchLook.id) this.touchLook.id = null;
     this.touchBoostPointers.delete(e.pointerId);
+    this.touchStarts.delete(e.pointerId);
   }
 
   private trackMouse(e: PointerEvent): void {
@@ -174,7 +197,7 @@ export class InputControls {
     if (inField) return;
 
     const steer = this.steerKeys.has(code);
-    if (steer || this.boostKeys.has(code) || this.brakeKeys.has(code)) {
+    if (steer || this.boostKeys.has(code) || this.brakeKeys.has(code) || this.lookKeys.has(code)) {
       if (this.enabled || !this.boostKeys.has(code)) e.preventDefault();
       if (down) {
         this.keys.add(code);
@@ -210,7 +233,7 @@ export class InputControls {
     const state = this.pad;
     state.connected = !!pad;
     if (!pad) {
-      state.stickX = state.stickY = 0;
+      state.stickX = state.stickY = state.lookX = state.lookY = 0;
       state.boost = state.brake = false;
       return;
     }
@@ -221,6 +244,9 @@ export class InputControls {
     };
     state.stickX = stick.x;
     state.stickY = stick.y;
+    const look = shapeStick(pad.axes[2] ?? 0, -(pad.axes[3] ?? 0), this.tuning.gamepadDeadZone, 1.2);
+    state.lookX = look.x;
+    state.lookY = look.y;
     state.boost = (this.bindings.holds.boost.gamepadButtons ?? []).some(pressed);
     state.brake = (this.bindings.holds.brake.gamepadButtons ?? []).some(pressed);
 
@@ -273,8 +299,28 @@ export class InputControls {
       steer.stickY = stick.y;
     }
 
-    let x = mouse.stickX + this.keyStick.x + steer.stickX + this.pad.stickX;
-    let y = mouse.stickY + this.keyStick.y + steer.stickY + this.pad.stickY;
+    // Free look: the look key hands the mouse to the head; the right stick and a dragging second
+    // finger look on their own.
+    const lookKey = this.enabled && [...this.lookKeys].some((code) => this.keys.has(code));
+    const lookTouch = this.touchLook;
+    let lookX = this.pad.lookX;
+    let lookY = this.pad.lookY;
+    if (lookKey) {
+      lookX += mouse.inside && mouse.active ? mouse.stickX : 0;
+      lookY += mouse.inside && mouse.active ? mouse.stickY : 0;
+    }
+    if (lookTouch.id !== null) {
+      const radius = this.tuning.touchRadius * 1.6;
+      lookX += (lookTouch.x - lookTouch.originX) / radius;
+      lookY += (lookTouch.originY - lookTouch.y) / radius;
+    }
+    this.look.active = this.enabled && (lookKey || lookTouch.id !== null || Math.hypot(this.pad.lookX, this.pad.lookY) > 0.05);
+    this.look.x = clamp(lookX, -1, 1);
+    this.look.y = clamp(this.invertY ? -lookY : lookY, -1, 1);
+    const mouseSteers = lookKey ? 0 : 1;
+
+    let x = mouse.stickX * mouseSteers + this.keyStick.x + steer.stickX + this.pad.stickX;
+    let y = mouse.stickY * mouseSteers + this.keyStick.y + steer.stickY + this.pad.stickY;
     const magnitude = Math.hypot(x, y);
     if (magnitude > 1) {
       x /= magnitude;

@@ -8,6 +8,7 @@ import { SpeedEffects } from '../present/render/effects/speed-effects';
 import { CameraToken } from './camera-feature';
 import { FlightToken } from './flight-feature';
 import { SceneToken } from './scene-feature';
+import { SettingsToken } from './settings-feature';
 import { TimeScaleToken } from './time-scale-feature';
 
 // How flight feels (v1): air streaks, the launch and sonic-boom shockwaves, impact bursts, sea
@@ -38,11 +39,16 @@ export const effectsFeature: Feature = {
     const dust = new DustPlumes(quality.dustPuffs, () => ctx.random.stream('dust').next());
     scene.add(dust.mesh);
     const effects = new SpeedEffects(scene, dust);
-    const motion = reducedMotion ? 0.35 : 1;
+    const settings = ctx.services.require(SettingsToken);
+    const reduced = (): boolean => reducedMotion || settings.current.reducedMotion;
     let flash = 0;
     let dustVeil = 0;
+    let droplets = 0;
     ctx.services.provide(EffectsToken, {
-      dust, effects, motion,
+      dust, effects,
+      get motion() {
+        return reduced() ? 0.35 : 1;
+      },
       flash(amount) {
         flash = Math.max(flash, amount);
       },
@@ -51,6 +57,7 @@ export const effectsFeature: Feature = {
     const { hitStop } = ctx.content.simulation;
     ctx.events.on('flight:event', (event) => {
       const model = flight.model;
+      const motion = reduced() ? 0.35 : 1;
       switch (event.type) {
         case 'launch':
           effects.onLaunch(model.position, model.forward);
@@ -65,7 +72,9 @@ export const effectsFeature: Feature = {
           break;
         case 'impact':
           effects.onImpact(event.point, event.normal, event.strength);
-          rig.shake((0.25 + event.strength * 0.5) * motion);
+          // First person gets a directional knock off the wall; chase keeps the shake.
+          rig.jolt(event.normal, event.strength * rig.firstPersonBlend * motion);
+          rig.shake((0.25 + event.strength * 0.5) * motion * (1 - rig.firstPersonBlend * 0.7));
           break;
         case 'smash':
           // A split-second freeze sells the weight of bursting through.
@@ -76,6 +85,7 @@ export const effectsFeature: Feature = {
           break;
         case 'splash':
           effects.onSplash(event.point, event.strength);
+          droplets = Math.min(1, droplets + event.strength * 0.6);
           rig.shake(0.2 * motion);
           break;
         default:
@@ -89,6 +99,7 @@ export const effectsFeature: Feature = {
       dust.clear();
       effects.clear();
       flash = 0;
+      droplets = 0;
     });
 
     ctx.systems.addFrame({
@@ -101,10 +112,16 @@ export const effectsFeature: Feature = {
         dust.update(simDt, DUST_WIND);
         dustVeil = damp(dustVeil, dust.active ? dust.densityAt(camera.position) * 0.7 : 0, 5, realDt);
         flash = damp(flash, 0, 5, realDt);
-        const blurMotion = reducedMotion ? 0.3 : 1;
+        const blurMotion = reduced() ? 0.3 : 1;
         post.settings.uSpeedBlur.value = (smoothstep(60, 140, view.speed) * view.boostBlend * 0.55 + view.surfaceRush * 0.18) * blurMotion;
         post.settings.uDust.value = dustVeil;
         post.settings.uFlash.value = flash;
+        // Visor: spray beads on the glass while skimming the sea and speed clears it; boosting
+        // presses in from the edges.
+        const spray = view.overWater && view.groundClearance < 8 && view.speed > 25 ? 0.9 : 0;
+        droplets = spray > droplets ? Math.min(spray, droplets + realDt * 1.2) : Math.max(0, droplets - realDt * (0.15 + view.speed / 90));
+        post.settings.uDroplets.value = droplets * rig.firstPersonBlend;
+        post.settings.uVignette.value = 0.36 + view.boostBlend * rig.firstPersonBlend * 0.22 * (reduced() ? 0.3 : 1);
       },
     });
   },

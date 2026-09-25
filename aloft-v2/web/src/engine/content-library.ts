@@ -28,6 +28,8 @@ export const CAMERA_SHAPE: Shape = {
   distance: num(1, 50), boostDistance: num(1, 50), hoverDistance: num(1, 50), height: num(-5, 20),
   lookAhead: num(0, 200), lookLift: num(-10, 10), fov: num(20, 120), boostFov: num(20, 130), firstPersonFov: num(20, 130),
   yawFollow: num(0.1, 50), pitchFollow: num(0.1, 50), pitchShare: num(0, 1), turnLead: num(0, 2), rollShare: num(0, 1),
+  firstPersonPitchShare: num(0, 1),
+  freeLook: obj({ maxYaw: num(0, 3.2), maxPitch: num(0, 1.5), response: num(0.5, 60), returnTime: num(0.05, 3) }),
 };
 
 export const INPUT_SHAPE: Shape = {
@@ -83,7 +85,7 @@ const binding: Rule = obj({
 
 export const ACTIONS_SHAPE: Shape = {
   axes: obj({ 'steer-left': binding, 'steer-right': binding, 'steer-up': binding, 'steer-down': binding }),
-  holds: obj({ boost: binding, brake: binding }),
+  holds: obj({ boost: binding, brake: binding, look: binding }),
   presses: obj({
     pause: binding, 'toggle-view': binding, 'toggle-sound': binding, restart: binding,
     'toggle-keys': binding, 'toggle-dev': binding, confirm: binding, slam: binding, grab: binding,

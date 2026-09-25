@@ -99,4 +99,26 @@ describe('powers', () => {
     expect(s.system.isLoose(held)).toBe(false);
     expect(s.powers.held).toBeNull();
   });
+
+  test('a throw during free look leaves within 2 degrees of the view', () => {
+    const s = powerScene([{ w: 30, d: 30, h: 120, x: 0, z: 0, style: FacadeStyle.glass }]);
+    s.heroHit({ x: 0.7, y: 52, z: -80 }, { x: 0, y: 0, z: 1 }, 108);
+    s.step(60 * 12);
+    const piece = s.system.fragmentsNear({ x: 0, y: 20, z: 60 }, 200).filter((p) => p.level > 0 && !p.debris && p.massReal <= content.powers.grab.maxMass)[0]!;
+    s.flight.reset(new Vector3(piece.centre.x, piece.centre.y + 2, piece.centre.z - 6), 0);
+    s.powers.pressGrab();
+    s.step(20);
+    // Looking 70° to the right and a little up while flying straight ahead.
+    const look = new Vector3(Math.sin(1.22) * Math.cos(0.2), Math.sin(0.2), Math.cos(1.22) * Math.cos(0.2)).normalize();
+    s.powers.aim.copy(look);
+    let thrown: { x: number; y: number; z: number } | null = null;
+    s.events.on('power:throw', (e) => (thrown = e.velocity));
+    const heroVelocity = s.flight.velocity.clone();
+    s.powers.pressGrab();
+    s.step(12);
+    expect(thrown).not.toBeNull();
+    const t = thrown! as { x: number; y: number; z: number };
+    const relative = new Vector3(t.x, t.y, t.z).sub(heroVelocity).normalize();
+    expect((relative.angleTo(look) * 180) / Math.PI).toBeLessThan(2);
+  });
 });

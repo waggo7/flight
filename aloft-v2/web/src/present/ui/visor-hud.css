@@ -1,0 +1,34 @@
+/* First-person visor HUD. Pairs with present/ui/visor-hud.ts. */
+.visor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  color: rgb(255 246 234 / 0.85);
+  font: 600 11px/1 var(--font-ui, system-ui);
+  letter-spacing: 0.1em;
+  text-shadow: var(--text-shadow, none);
+}
+.visor-reticle { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; translate: -50% -50%; }
+.visor-reticle circle { fill: none; stroke-width: 2; }
+.visor-reticle .dot { fill: rgb(255 246 234 / 0.8); stroke: none; }
+.visor-reticle .ring { stroke: rgb(255 246 234 / 0.25); }
+.visor-reticle .arc { stroke: var(--gold, #ffd08f); stroke-linecap: round; }
+.visor-edge { position: absolute; top: 50%; translate: 0 -50%; display: grid; gap: 6px; justify-items: center; }
+.visor-edge--left { left: 16%; }
+.visor-edge--right { right: 16%; }
+.visor-edge b { font-size: 18px; letter-spacing: 0.02em; }
+.visor-edge i { display: block; width: 18px; height: 1px; background: currentColor; opacity: 0.5; }
+.grab-mark {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  translate: -50% -50%;
+  pointer-events: none;
+  border: 2px solid rgb(255 208 143 / 0.9);
+  border-radius: 6px;
+  clip-path: polygon(0 0, 30% 0, 30% 12%, 12% 12%, 12% 30%, 0 30%, 0 70%, 12% 70%, 12% 88%, 30% 88%, 30% 100%, 0 100%, 0 0, 100% 0, 100% 30%, 88% 30%, 88% 12%, 70% 12%, 70% 0, 100% 0, 100% 100%, 70% 100%, 70% 88%, 88% 88%, 88% 70%, 100% 70%, 100% 100%);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.grab-mark[data-on='true'] { opacity: 1; }

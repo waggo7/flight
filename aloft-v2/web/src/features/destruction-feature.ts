@@ -25,7 +25,8 @@ export const destructionFeature: Feature = {
     const city = ctx.services.require(CityToken);
     const scene = ctx.services.require(SceneToken);
     const { camera } = scene;
-    const { dust, motion } = ctx.services.require(EffectsToken);
+    const fx = ctx.services.require(EffectsToken);
+    const { dust } = fx;
     const rig = ctx.services.require(CameraToken);
     const time = ctx.services.require(TimeScaleToken);
     const hud = ctx.services.require(HudToken);
@@ -68,15 +69,15 @@ export const destructionFeature: Feature = {
     ctx.events.on('destruction:failure', ({ first }) => {
       if (!first) return;
       hud.toast('Timber!');
-      time.slowMotion(1.1 * motion, 0.35);
-      rig.kick(6 * motion);
+      time.slowMotion(1.1 * fx.motion, 0.35);
+      rig.kick(6 * fx.motion);
     });
     ctx.events.on('destruction:impact', ({ position, energy, ground }) => {
       const distance = distanceTo(position);
       // Two bands: a sharp knock for close hits, a heavy low rumble that carries further.
       const loud = Math.log10(Math.max(energy, 1e6) / 1e6);
-      rig.shake(clamp(loud * 0.2 - distance / 900, 0, 0.7) * motion);
-      rig.rumble(clamp(loud * 0.18 - distance / 2500, 0, 0.8) * motion);
+      rig.shake(clamp(loud * 0.2 - distance / 900, 0, 0.7) * fx.motion);
+      rig.rumble(clamp(loud * 0.18 - distance / 2500, 0, 0.8) * fx.motion);
       if (ground && energy > 2e7) collapse.groundImpact(position, energy);
     });
   },

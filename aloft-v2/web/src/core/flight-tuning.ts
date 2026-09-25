@@ -46,6 +46,15 @@ export interface CameraTuning {
   pitchShare: number;
   turnLead: number;
   rollShare: number;
+  firstPersonPitchShare: number;
+  freeLook: FreeLookTuning;
+}
+
+export interface FreeLookTuning {
+  maxYaw: number;
+  maxPitch: number;
+  response: number;
+  returnTime: number;
 }
 
 export interface InputTuning {
@@ -79,6 +88,6 @@ export interface KeyBinding {
 
 export interface InputBindings {
   axes: { 'steer-left': KeyBinding; 'steer-right': KeyBinding; 'steer-up': KeyBinding; 'steer-down': KeyBinding };
-  holds: { boost: KeyBinding; brake: KeyBinding };
+  holds: { boost: KeyBinding; brake: KeyBinding; look: KeyBinding };
   presses: Record<PressAction, KeyBinding>;
 }

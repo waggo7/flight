@@ -72,11 +72,22 @@ export class PowerSystem {
   pressGrab(): void {
     const action = this.grab.press();
     if (action !== 'grab') return;
+    const best = this.grabCandidate();
+    if (!best || !this.destruction.hold(best.body)) return;
+    this.held = best.body;
+    this.grab.grabbed();
+    const hero = this.flight.position;
+    this.events.emit('power:grab', { position: { x: hero.x, y: hero.y, z: hero.z }, mass: best.mass });
+  }
+
+  /** The piece a grab would take right now (for the HUD highlight too), or null. */
+  grabCandidate(): { body: number; mass: number; centre: WorldPoint } | null {
+    if (this.grab.phase !== 'empty') return null;
     const hero = this.flight.position;
     const forward = this.flight.forward;
     const reach = this.tuning.grab.reach;
     const centre = { x: hero.x + forward.x * reach * 0.5, y: hero.y + forward.y * reach * 0.5, z: hero.z + forward.z * reach * 0.5 };
-    let best: { body: number; score: number; mass: number } | null = null;
+    let best: { body: number; score: number; mass: number; centre: WorldPoint } | null = null;
     for (const piece of this.destruction.fragmentsNear(centre, reach)) {
       if (piece.level === 0 || piece.massReal > this.tuning.grab.maxMass) continue;
       scratch.set(piece.centre.x - hero.x, piece.centre.y - hero.y, piece.centre.z - hero.z);
@@ -85,12 +96,16 @@ export class PowerSystem {
       const ahead = distance > 1e-3 ? scratch.dot(forward) / distance : 1;
       if (ahead < 0.2) continue;
       const score = distance - ahead * 6 - Math.min(piece.massReal / 50000, 4);
-      if (!best || score < best.score) best = { body: piece.body, score, mass: piece.massReal };
+      if (!best || score < best.score) best = { body: piece.body, score, mass: piece.massReal, centre: piece.centre };
     }
-    if (!best || !this.destruction.hold(best.body)) return;
-    this.held = best.body;
-    this.grab.grabbed();
-    this.events.emit('power:grab', { position: { x: hero.x, y: hero.y, z: hero.z }, mass: best.mass });
+    return best && { body: best.body, mass: best.mass, centre: best.centre };
+  }
+
+  /** Where a slam in progress will land (straight below the hero), or null. */
+  slamMarker(): WorldPoint | null {
+    if (this.slam.phase !== 'windup' && this.slam.phase !== 'dive') return null;
+    const p = this.flight.position;
+    return { x: p.x, y: this.world.floorAt(p.x, p.z, p.y) + 0.3, z: p.z };
   }
 
   /** The flight model's smash hook while powers are active: ramming with a held piece adds its mass. */
