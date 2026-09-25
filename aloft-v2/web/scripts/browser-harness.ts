@@ -23,12 +23,17 @@ function hostAddress(): string {
   return '127.0.0.1';
 }
 
-export async function serveDist(port = 4180): Promise<{ url: string; server: Server }> {
-  if (!existsSync(join(DIST, 'index.html'))) throw new Error('dist/index.html is missing: run `npm run build` first.');
+export function serveDist(port = 4180): Promise<{ url: string; server: Server }> {
+  return serveDirectory(DIST, port);
+}
+
+/** Serve a built single-page app (any folder with an index.html) on the container's address. */
+export async function serveDirectory(root: string, port: number): Promise<{ url: string; server: Server }> {
+  if (!existsSync(join(root, 'index.html'))) throw new Error(`${root}/index.html is missing: build it first.`);
   const server = createServer((request, response) => {
     const path = normalize(decodeURIComponent((request.url ?? '/').split('?')[0]!)).replace(/^(\.\.[/\\])+/, '');
-    let file = join(DIST, path === '/' ? 'index.html' : path);
-    if (!file.startsWith(DIST) || !existsSync(file) || statSync(file).isDirectory()) file = join(DIST, 'index.html');
+    let file = join(root, path === '/' ? 'index.html' : path);
+    if (!file.startsWith(root) || !existsSync(file) || statSync(file).isDirectory()) file = join(root, 'index.html');
     response.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-store' });
     createReadStream(file).pipe(response);
   });

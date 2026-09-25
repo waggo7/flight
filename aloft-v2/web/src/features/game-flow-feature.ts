@@ -1,9 +1,11 @@
 import type { Feature } from '../engine/game-context';
 import { serviceToken } from '../engine/service-registry';
 import { FramePhase } from '../engine/system-phases';
+import { damp } from '../core/scalar-math';
 import { CameraToken } from './camera-feature';
 import { ControlsToken } from './controls-feature';
 import { FlightToken } from './flight-feature';
+import { TimeScaleToken } from './time-scale-feature';
 
 // Title → flying ⇄ paused, restart, and the view toggle. M1 ports v1's full HUD on top.
 
@@ -33,13 +35,14 @@ export const gameFlowFeature: Feature = {
     const flight = ctx.services.require(FlightToken);
     const controls = ctx.services.require(ControlsToken);
     const rig = ctx.services.require(CameraToken);
+    const time = ctx.services.require(TimeScaleToken);
     let state: GameState = 'title';
 
     const setState = (next: GameState): void => {
       state = next;
       flight.active = next === 'flying';
       controls.input.setEnabled(next === 'flying');
-      ctx.loop.timeScale = next === 'paused' ? 0 : 1;
+      time.setPaused(next === 'paused');
       document.body.dataset.state = next;
       ctx.events.emit('game:state', { state: next });
     };
@@ -83,13 +86,13 @@ export const gameFlowFeature: Feature = {
     });
     document.getElementById('start')?.addEventListener('click', () => service.start());
 
-    // The title camera swings out to the chase position once flying.
+    // The title camera swings out to the chase position once flying (v1's easing).
     ctx.systems.addFrame({
       name: 'title-camera',
       phase: FramePhase.Present,
       frame(realDt) {
         const target = state === 'title' ? 1 : 0;
-        rig.intro += (target - rig.intro) * Math.min(1, realDt * (target ? 3 : 1.4));
+        rig.intro = damp(rig.intro, target, target === 0 ? 1.7 : 3, realDt);
       },
     });
   },

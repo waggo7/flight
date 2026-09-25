@@ -79,7 +79,9 @@ export interface FlightService {
 
 export const FlightToken = serviceToken<FlightService>('flight');
 
-export const SPAWN_POSITION = new Vector3(0, 60, 0);
+/** Where the hero hovers at the start and after Restart (v1's spawn, over the southern avenues). */
+export const SPAWN_POSITION = new Vector3(-60, 190, -980);
+export const SPAWN_YAW = 0.09;
 
 export const flightFeature: Feature = {
   name: 'flight',
@@ -95,7 +97,7 @@ export const flightFeature: Feature = {
       model,
       view,
       active: false,
-      respawn(position = SPAWN_POSITION, yaw = 0) {
+      respawn(position = SPAWN_POSITION, yaw = SPAWN_YAW) {
         model.reset(position, yaw);
         current.copyFrom(model);
         previous.copyFrom(model);
