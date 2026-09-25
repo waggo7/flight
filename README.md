@@ -1,5 +1,8 @@
 # Aloft
 
+> **v2 is under way in [`aloft-v2/`](aloft-v2/)** — real rigid-body building collapse, collapse sound,
+> superhero powers, and a Godot 4.7 pivot kept ready. This root folder is v1, kept as the reference.
+
 A superhero flight over a golden-hour city. Launch from a rooftop hover, carve down avenues
 between glass towers, punch through clouds, skim the sea, and break into a shockwave at full speed.
 Hit a tower too hard and it gives way: you burst through, and the top tips over and comes down in

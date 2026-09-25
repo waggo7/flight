@@ -1,0 +1,50 @@
+name: aloft-v2
+
+on:
+  push:
+    paths: ['aloft-v2/**', '.github/workflows/aloft-v2.yml']
+  pull_request:
+    paths: ['aloft-v2/**', '.github/workflows/aloft-v2.yml']
+
+defaults:
+  run:
+    working-directory: aloft-v2/web
+
+jobs:
+  web:
+    name: Typecheck, lint, tests, build, e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: aloft-v2/web/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: aloft-v2/web/test-results/shots/
+          if-no-files-found: ignore
+
+  godot:
+    name: Godot 4.7 conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: aloft-v2/web/package-lock.json
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/aloft
+          key: godot-4.7.2-stable
+      - run: npm run godot:check

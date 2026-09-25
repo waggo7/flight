@@ -1,0 +1,13 @@
+{
+  "$notes": {
+    "about": "The fixed-step clock. Simulation runs at stepsPerSecond; rendering interpolates between steps.",
+    "maxStepsPerFrame": "when a frame falls behind, run at most this many steps, then drop the rest of the backlog",
+    "maxFrameDelta": "seconds; longer frames (tab switches) are clamped to this",
+    "hitStop": "a split-second freeze on big hits: sim time runs at timeScale for seconds"
+  },
+  "stepsPerSecond": 60,
+  "maxStepsPerFrame": { "desktop": 4, "phone": 2 },
+  "maxFrameDelta": 0.1,
+  "hitStop": { "seconds": 0.13, "timeScale": 0.12 },
+  "seed": 2024
+}

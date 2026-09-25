@@ -1,0 +1,41 @@
+{
+  "name": "aloft-v2",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Aloft v2: superhero flight over a golden-hour city, with rigid-body building collapse.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsx scripts/size-check.ts",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.core.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "conformance:write": "tsx scripts/conformance-write.ts",
+    "godot:sync": "tsx scripts/godot-sync.ts",
+    "godot:check": "tsx scripts/godot-check.ts",
+    "e2e": "tsx scripts/screenshots.ts"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "0.20.0",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.4",
+    "@types/three": "0.186.0",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1",
+    "vite": "8.3.1",
+    "vite-plugin-singlefile": "2.3.3",
+    "vitest": "5.0.1"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

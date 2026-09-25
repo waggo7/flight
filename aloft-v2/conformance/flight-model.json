@@ -1,0 +1,4873 @@
+{
+ "module": "flight-model",
+ "version": 1,
+ "dt": 0.016666666666666666,
+ "sampleEvery": 30,
+ "tolerance": {
+  "absolute": 0.000001,
+  "relative": 0.000001
+ },
+ "tuning": {
+  "$notes": {
+   "about": "Every number that shapes how flight feels. Units: metres, seconds, radians. Read by the web game and the Godot port.",
+   "cruiseSpeed": "m/s, the calm default",
+   "boostSpeed": "m/s at full boost",
+   "minFlightSpeed": "m/s, flight never drops below this",
+   "launchSpeed": "m/s when leaving a hover",
+   "hoverThreshold": "m/s below which braking settles into a hover",
+   "diveBonus": "extra m/s a steep dive can add",
+   "climbPenalty": "m/s a steep climb costs",
+   "boostAccel": "m/s² toward boost speed",
+   "cruiseAccel": "m/s² toward cruise speed",
+   "coastDecel": "m/s² when easing off",
+   "brakeDecel": "m/s² when braking",
+   "gravityShare": "how strongly gravity speeds dives and slows climbs",
+   "yawRateSlow": "rad/s at full stick, cruise speed",
+   "yawRateFast": "rad/s at full stick, boost speed",
+   "yawResponse": "1/s, how quickly the turn rate follows the stick",
+   "pitchMax": "rad, the attitude reached at full stick (~69°)",
+   "pitchResponse": "1/s",
+   "bankMax": "rad",
+   "bankResponse": "1/s",
+   "bankGain": "scales the coordinated-turn bank",
+   "hoverClimb": "m/s",
+   "hoverYawRate": "rad/s",
+   "radius": "m, the hero's collision sphere",
+   "maxAltitude": "m",
+   "worldRadius": "m, where the gentle turn-back begins",
+   "boomSpeedShare": "shockwave fires past this share of boostSpeed",
+   "smashSpeedKept": "share of speed kept when bursting through a building"
+  },
+  "cruiseSpeed": 34,
+  "boostSpeed": 108,
+  "minFlightSpeed": 16,
+  "launchSpeed": 44,
+  "hoverThreshold": 4,
+  "diveBonus": 38,
+  "climbPenalty": 12,
+  "boostAccel": 44,
+  "cruiseAccel": 16,
+  "coastDecel": 11,
+  "brakeDecel": 40,
+  "gravityShare": 0.5,
+  "yawRateSlow": 1.3,
+  "yawRateFast": 0.72,
+  "yawResponse": 4.2,
+  "pitchMax": 1.2,
+  "pitchResponse": 2.5,
+  "bankMax": 1.15,
+  "bankResponse": 4.6,
+  "bankGain": 0.5,
+  "hoverClimb": 10,
+  "hoverYawRate": 1.15,
+  "radius": 1.2,
+  "maxAltitude": 2400,
+  "worldRadius": 6000,
+  "boomSpeedShare": 0.95,
+  "smashSpeedKept": 0.74
+ },
+ "cases": [
+  {
+   "name": "launch-cruise",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     300,
+     0
+    ],
+    "yaw": 0,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 360,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      0,
+      300,
+      20.57916666666669
+     ],
+     "velocity": [
+      0,
+      0,
+      38.5000000000001
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 38.5000000000001,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      0,
+      300,
+      38.46250000000009
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      0,
+      300,
+      55.46250000000019
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      0,
+      300,
+      72.46250000000019
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      0,
+      300,
+      89.46250000000008
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      0,
+      300,
+      106.46249999999996
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      0,
+      300,
+      123.46249999999985
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      0,
+      300,
+      140.46249999999975
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      0,
+      300,
+      157.46249999999964
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 1.6918979226151521e-10,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      0,
+      300,
+      174.46249999999952
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 1.3887943864964216e-11,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 330,
+     "position": [
+      0,
+      300,
+      191.4624999999994
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 1.139991853044373e-12,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 360,
+     "position": [
+      0,
+      300,
+      208.4624999999993
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 9.35762296884033e-14,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    }
+   ]
+  },
+  {
+   "name": "boost-boom-glide",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     300,
+     0
+    ],
+    "yaw": 0.4,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 120,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    },
+    {
+     "steps": 240,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": true,
+      "brake": false
+     }
+    },
+    {
+     "steps": 360,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      8.01390496942678,
+      300,
+      18.954667705751064
+     ],
+     "velocity": [
+      14.992606178883085,
+      0,
+      35.46084826911117
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 38.5000000000001,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      14.978002991046507,
+      300,
+      35.42630848183605
+     ],
+     "velocity": [
+      13.240223638494118,
+      0,
+      31.316073796098095
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      21.598114810293584,
+      300,
+      51.08434537988514
+     ],
+     "velocity": [
+      13.240223638494118,
+      0,
+      31.316073796098095
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      28.218226629540663,
+      300,
+      66.74238227793423
+     ],
+     "velocity": [
+      13.240223638494118,
+      0,
+      31.316073796098095
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      37.0515326942419,
+      300,
+      87.63511582523302
+     ],
+     "velocity": [
+      21.80742716928444,
+      0,
+      51.579415664161594
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 56.00000000000003,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0.7768698398515701,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      50.16844052433829,
+      300,
+      118.65952030656354
+     ],
+     "velocity": [
+      30.374630700074764,
+      0,
+      71.8427575322251
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 78.00000000000006,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0.950212931632136,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      67.56895011982982,
+      300,
+      159.8155957219258
+     ],
+     "velocity": [
+      38.941834230865084,
+      0,
+      92.10609940028858
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 100.00000000000009,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0.9888910034617576,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      88.34009181152614,
+      300,
+      208.9439657409355
+     ],
+     "velocity": [
+      42.057180969334254,
+      0,
+      99.47458735231159
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0.9975212478233337,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      109.36868229619311,
+      300,
+      258.68125941709167
+     ],
+     "velocity": [
+      42.057180969334254,
+      0,
+      99.47458735231159
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.6918979226151521e-10,
+     "boostBlend": 0.9994469156298522,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      130.39727278086013,
+      300,
+      308.418553093247
+     ],
+     "velocity": [
+      42.057180969334254,
+      0,
+      99.47458735231159
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.3887943864964216e-11,
+     "boostBlend": 0.9998765901959134,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 330,
+     "position": [
+      151.42586326552754,
+      300,
+      358.15584676940233
+     ],
+     "velocity": [
+      42.057180969334254,
+      0,
+      99.47458735231159
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.139991853044373e-12,
+     "boostBlend": 0.9999724635506503,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 360,
+     "position": [
+      172.45445375019494,
+      300,
+      407.89314044555766
+     ],
+     "velocity": [
+      42.057180969334254,
+      0,
+      99.47458735231159
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 9.35762296884033e-14,
+     "boostBlend": 0.9999938557876467,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 390,
+     "position": [
+      192.9297456734985,
+      300,
+      456.321759959401
+     ],
+     "velocity": [
+      39.91538008663663,
+      0,
+      94.40875188529562
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 102.49999999999989,
+     "mode": "flying",
+     "hoverBlend": 7.681204685202233e-15,
+     "boostBlend": 0.4723636504206054,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 420,
+     "position": [
+      212.33413715545316,
+      300,
+      502.2174617397364
+     ],
+     "velocity": [
+      37.773579203939015,
+      0,
+      89.34291641827964
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 96.99999999999977,
+     "mode": "flying",
+     "hoverBlend": 6.305116760147109e-16,
+     "boostBlend": 0.2231287891893428,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 450,
+     "position": [
+      230.66762819605933,
+      300,
+      545.5802457865636
+     ],
+     "velocity": [
+      35.63177832124139,
+      0,
+      84.27708095126367
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 91.49999999999966,
+     "mode": "flying",
+     "hoverBlend": 5.175555005801971e-17,
+     "boostBlend": 0.10539857696664626,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 480,
+     "position": [
+      247.9302187953163,
+      300,
+      586.410112099883
+     ],
+     "velocity": [
+      33.48997743854377,
+      0,
+      79.2112454842477
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 85.99999999999955,
+     "mode": "flying",
+     "hoverBlend": 4.248354255291677e-18,
+     "boostBlend": 0.04978676246554312,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 510,
+     "position": [
+      264.1219089532245,
+      300,
+      624.7070606796942
+     ],
+     "velocity": [
+      31.348176555846145,
+      0,
+      74.14541001723173
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 80.49999999999943,
+     "mode": "flying",
+     "hoverBlend": 3.4872615319945245e-19,
+     "boostBlend": 0.023517601357984315,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 540,
+     "position": [
+      279.24269866978386,
+      300,
+      660.4710915259976
+     ],
+     "velocity": [
+      29.206375673148525,
+      0,
+      69.07957455021575
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 74.99999999999932,
+     "mode": "flying",
+     "hoverBlend": 2.862518580549462e-20,
+     "boostBlend": 0.011108928282208436,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 570,
+     "position": [
+      293.29258794499475,
+      300,
+      693.702204638793
+     ],
+     "velocity": [
+      27.0645747904509,
+      0,
+      64.01373908319978
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 69.4999999999992,
+     "mode": "flying",
+     "hoverBlend": 2.3496983374528773e-21,
+     "boostBlend": 0.005247486157313953,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 600,
+     "position": [
+      306.27157677885657,
+      300,
+      724.4004000180804
+     ],
+     "velocity": [
+      24.92277390775328,
+      0,
+      58.947903616183815
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 63.9999999999991,
+     "mode": "flying",
+     "hoverBlend": 1.9287498479639695e-22,
+     "boostBlend": 0.0024787369466865816,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 630,
+     "position": [
+      318.1796651713696,
+      300,
+      752.5656776638598
+     ],
+     "velocity": [
+      22.780973025055744,
+      0,
+      53.88206814916804
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 58.4999999999992,
+     "mode": "flying",
+     "hoverBlend": 1.5832142861596768e-23,
+     "boostBlend": 0.0011708724266581275,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 660,
+     "position": [
+      329.01685312253414,
+      300,
+      778.1980375761315
+     ],
+     "velocity": [
+      20.639172142358206,
+      0,
+      48.81623268215226
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 52.9999999999993,
+     "mode": "flying",
+     "hoverBlend": 1.2995814250075413e-24,
+     "boostBlend": 0.0005530809718800057,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 690,
+     "position": [
+      338.7831406323496,
+      300,
+      801.2974797548952
+     ],
+     "velocity": [
+      18.497371259660664,
+      0,
+      43.75039721513649
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 47.499999999999396,
+     "mode": "flying",
+     "hoverBlend": 1.0667613948338864e-25,
+     "boostBlend": 0.0002612569520736079,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 720,
+     "position": [
+      347.4785277008163,
+      300,
+      821.864004200151
+     ],
+     "velocity": [
+      16.355570376963126,
+      0,
+      38.68456174812071
+     ],
+     "yaw": 0.4,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 41.999999999999496,
+     "mode": "flying",
+     "hoverBlend": 8.756510762696808e-27,
+     "boostBlend": 0.00012340904583063445,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    },
+    {
+     "step": 214,
+     "type": "boom"
+    }
+   ]
+  },
+  {
+   "name": "turn-right-bank",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     300,
+     0
+    ],
+    "yaw": 0,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 120,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    },
+    {
+     "steps": 90,
+     "controls": {
+      "steerX": 1,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    },
+    {
+     "steps": 120,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      0,
+      300,
+      20.57916666666669
+     ],
+     "velocity": [
+      0,
+      0,
+      38.5000000000001
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 38.5000000000001,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      0,
+      300,
+      38.46250000000009
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      0,
+      300,
+      55.46250000000019
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      0,
+      300,
+      72.46250000000019
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      -2.6463363177794936,
+      300,
+      89.13009942994348
+     ],
+     "velocity": [
+      -12.85641078428999,
+      0,
+      31.475588981710764
+     ],
+     "yaw": -0.3877751899767438,
+     "pitch": 0,
+     "bank": 0.8954769727817882,
+     "yawRate": -1.1408066432711232,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      -13.445369283063174,
+      300,
+      101.90579921983702
+     ],
+     "velocity": [
+      -28.713604657815218,
+      0,
+      18.207935290820107
+     ],
+     "yaw": -1.005664076341979,
+     "pitch": 0,
+     "bank": 1.115544607065211,
+     "yawRate": -1.280505750133379,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      -29.703732796284633,
+      300,
+      105.7464965517768
+     ],
+     "velocity": [
+      -33.88870123541706,
+      0,
+      -2.7488049360844498
+     ],
+     "yaw": -1.6517318640590404,
+     "pitch": 0,
+     "bank": 1.146460663464631,
+     "yawRate": -1.2976128037898627,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      -46.09638119611202,
+      300,
+      101.40471112548333
+     ],
+     "velocity": [
+      -32.02316966038441,
+      0,
+      -11.424386412505285
+     ],
+     "yaw": -1.9134751494109976,
+     "pitch": 0,
+     "bank": 0.5720363734958577,
+     "yawRate": -0.15890102920744428,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      -61.97911579024116,
+      300,
+      95.34523492425977
+     ],
+     "velocity": [
+      -31.640608296501675,
+      0,
+      -12.444754181073622
+     ],
+     "yaw": -1.9455272972544013,
+     "pitch": 0,
+     "bank": 0.12489598061526916,
+     "yawRate": -0.01945845248246641,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 1.6918979226151521e-10,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      -77.78275157970073,
+      300,
+      89.08067000968047
+     ],
+     "velocity": [
+      -31.59151914669496,
+      0,
+      -12.568847123105831
+     ],
+     "yaw": -1.9494522887971437,
+     "pitch": 0,
+     "bank": 0.02083502701186467,
+     "yawRate": -0.0023828125903332096,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 1.3887943864964216e-11,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 330,
+     "position": [
+      -93.57645672968302,
+      300,
+      82.79108553987092
+     ],
+     "velocity": [
+      -31.58547440158894,
+      0,
+      -12.58402983255244
+     ],
+     "yaw": -1.9499329292423944,
+     "pitch": 0,
+     "bank": 0.0031069667830955355,
+     "yawRate": -0.00029179071900844105,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 1.139991853044373e-12,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    }
+   ]
+  },
+  {
+   "name": "pitch-and-level",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     300,
+     0
+    ],
+    "yaw": -1,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 180,
+     "controls": {
+      "steerX": 0,
+      "steerY": 1,
+      "boost": false,
+      "brake": false
+     }
+    },
+    {
+     "steps": 180,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      -14.439278247238617,
+      309.7973530968788,
+      9.271353941973118
+     ],
+     "velocity": [
+      -20.565475004413845,
+      28.170775363582862,
+      13.204939643516179
+     ],
+     "yaw": -1,
+     "pitch": 0.8561942437677723,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 37.2947955850615,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 309.7973530968788,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      -21.975808270226572,
+      323.8514196652852,
+      14.110504219501076
+     ],
+     "velocity": [
+      -11.312503633733975,
+      26.511855301799137,
+      7.263675050950869
+     ],
+     "yaw": -1,
+     "pitch": 1.1014980016513214,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 29.725614968450788,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 323.8514196652852,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      -26.477020044575443,
+      335.5938925755355,
+      17.000699062567158
+     ],
+     "velocity": [
+      -7.500483546445206,
+      21.140376827871542,
+      4.816005101109409
+     ],
+     "yaw": -1,
+     "pitch": 1.1717787049727892,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 22.942682733037458,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 335.5938925755355,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      -30.107231717655278,
+      346.19214230336644,
+      19.33163117213033
+     ],
+     "velocity": [
+      -7.112273157200505,
+      21.230430139800877,
+      4.566738076746394
+     ],
+     "yaw": -1,
+     "pitch": 1.1919144636010977,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 22.85105446243577,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 346.19214230336644,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      -33.62906646628374,
+      356.8150204870852,
+      21.592975258765605
+     ],
+     "velocity": [
+      -7.001296339209716,
+      21.255165721955212,
+      4.49548068137462
+     ],
+     "yaw": -1,
+     "pitch": 1.1976834550365265,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 22.825633985802533,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 356.8150204870852,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      -37.119894111016514,
+      367.4447684016648,
+      23.834409912947958
+     ],
+     "velocity": [
+      -6.969521098922634,
+      21.262166308046986,
+      4.475078034216746
+     ],
+     "yaw": -1,
+     "pitch": 1.1993362987558223,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 22.81841939906674,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 367.4447684016648,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      -45.82920246959245,
+      375.318470719185,
+      29.42659249988472
+     ],
+     "velocity": [
+      -23.73457901154052,
+      10.092413044618173,
+      15.239797925620117
+     ],
+     "yaw": -1,
+     "pitch": 0.34361560264208885,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 29.957277625511537,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 375.318470719185,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      -58.90154947890557,
+      378.311385832303,
+      37.820249987495906
+     ],
+     "velocity": [
+      -27.48380440951012,
+      3.225883706248354,
+      17.64714786912985
+     ],
+     "yaw": -1,
+     "pitch": 0.0984475184329634,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 32.82053714401062,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 378.311385832303,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      -72.9051025273353,
+      379.2258107153988,
+      46.81182799673732
+     ],
+     "velocity": [
+      -28.31397356935677,
+      0.9493219845416347,
+      18.180193356643787
+     ],
+     "yaw": -1,
+     "pitch": 0.028205686270025978,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 33.661576641647706,
+     "mode": "flying",
+     "hoverBlend": 1.6918979226151521e-10,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 379.2258107153988,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      -87.12852147617609,
+      379.4921472759612,
+      55.9445802771284
+     ],
+     "velocity": [
+      -28.527483097763902,
+      0.2739695735280003,
+      18.31728624826563
+     ],
+     "yaw": -1,
+     "pitch": 0.00808106441509604,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 33.90302828246063,
+     "mode": "flying",
+     "hoverBlend": 1.3887943864964216e-11,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 379.4921472759612,
+     "overWater": true
+    },
+    {
+     "step": 330,
+     "position": [
+      -101.41055758870506,
+      379.5688015498553,
+      65.11497020549068
+     ],
+     "velocity": [
+      -28.586558158934988,
+      0.07865457086826451,
+      18.355217908829452
+     ],
+     "yaw": -1,
+     "pitch": 0.002315263718661202,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 33.972216860197754,
+     "mode": "flying",
+     "hoverBlend": 1.139991853044373e-12,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 379.5688015498553,
+     "overWater": true
+    },
+    {
+     "step": 360,
+     "position": [
+      -115.70901663769304,
+      379.59079166293986,
+      74.29590518008528
+     ],
+     "velocity": [
+      -28.603309073655396,
+      0.022548079687654415,
+      18.36597354748157
+     ],
+     "yaw": -1,
+     "pitch": 0.0006633341613927957,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 33.99203999064704,
+     "mode": "flying",
+     "hoverBlend": 9.35762296884033e-14,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 379.59079166293986,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    }
+   ]
+  },
+  {
+   "name": "dive-then-climb",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     2300,
+     0
+    ],
+    "yaw": 2,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 300,
+     "controls": {
+      "steerX": 0,
+      "steerY": -1,
+      "boost": false,
+      "brake": false
+     }
+    },
+    {
+     "steps": 300,
+     "controls": {
+      "steerX": -0.4,
+      "steerY": 1,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      17.302151250009018,
+      2288.5628563761525,
+      -7.9184602262508905
+     ],
+     "velocity": [
+      29.76573152503187,
+      -37.73199769284759,
+      -13.622511893490945
+     ],
+     "yaw": 2,
+     "pitch": -0.8561942437677723,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 49.95273018966665,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2288.5628563761525,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      30.56594411895256,
+      2265.2675675994337,
+      -13.988735232192994
+     ],
+     "velocity": [
+      24.435328789693315,
+      -52.994739225811095,
+      -11.183012813880522
+     ],
+     "yaw": 2,
+     "pitch": -1.1014980016513214,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 59.41874665682163,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2265.2675675994337,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      41.821380020537525,
+      2237.9742908179774,
+      -19.139870500171323
+     ],
+     "velocity": [
+      21.288699922091038,
+      -55.52720139913442,
+      -9.742934341854191
+     ],
+     "yaw": 2,
+     "pitch": -1.1717787049727892,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 60.26112850903604,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2237.9742908179774,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      52.17360550237096,
+      2210.004843365244,
+      -23.87764469637344
+     ],
+     "velocity": [
+      20.340975393516768,
+      -56.189520120930894,
+      -9.309201051899636
+     ],
+     "yaw": 2,
+     "pitch": -1.1919144636010977,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 60.47874565171505,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2210.004843365244,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      62.25914073818456,
+      2181.853017524117,
+      -28.49336608681038
+     ],
+     "velocity": [
+      20.065894587033167,
+      -56.373856421119676,
+      -9.183308242752897
+     ],
+     "yaw": 2,
+     "pitch": -1.1976834550365265,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 60.53911928371899,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2181.853017524117,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      72.26764779003638,
+      2153.649898492762,
+      -33.07383494695855
+     ],
+     "velocity": [
+      19.98679679880181,
+      -56.42621951481269,
+      -9.147108542435625
+     ],
+     "yaw": 2,
+     "pitch": -1.1993362987558223,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 60.55625392721649,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2153.649898492762,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      82.25403570986829,
+      2125.43216306865,
+      -37.644180819241924
+     ],
+     "velocity": [
+      19.964111580609647,
+      -56.441184723448664,
+      -9.13672648095767
+     ],
+     "yaw": 2,
+     "pitch": -1.1998098464098608,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 60.56114971644214,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2125.43216306865,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      92.23408228960201,
+      2097.2102465060675,
+      -42.21162452932457
+     ],
+     "velocity": [
+      19.957610245633155,
+      -56.44546928192098,
+      -9.133751095892254
+     ],
+     "yaw": 2,
+     "pitch": -1.199945520084285,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 60.562551285877966,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2097.2102465060675,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      102.21231170861176,
+      2068.987132563462,
+      -46.77823660207442
+     ],
+     "velocity": [
+      19.95574742517704,
+      -56.44669657841314,
+      -9.132898562038093
+     ],
+     "yaw": 2,
+     "pitch": -1.1999843912428152,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 60.562952752135324,
+     "mode": "flying",
+     "hoverBlend": 1.6918979226151521e-10,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2068.987132563462,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      112.19002047475618,
+      2040.7636756097604,
+      -51.34461039410724
+     ],
+     "velocity": [
+      19.955213705311618,
+      -56.447048184217394,
+      -9.132654301109772
+     ],
+     "yaw": 2,
+     "pitch": -1.1999955280161936,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 60.563067766747054,
+     "mode": "flying",
+     "hoverBlend": 1.3887943864964216e-11,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2040.7636756097604,
+     "overWater": true
+    },
+    {
+     "step": 330,
+     "position": [
+      134.5863782575193,
+      2036.9968531366478,
+      -63.20765519725479
+     ],
+     "velocity": [
+      40.25844355511446,
+      26.83893264476314,
+      -25.609521640403187
+     ],
+     "yaw": 2.13735778151257,
+     "pitch": 0.5123897687803564,
+     "bank": -0.6766813882718004,
+     "yawRate": 0.4097397058441367,
+     "speed": 54.74411549783912,
+     "mode": "flying",
+     "hoverBlend": 1.139991853044373e-12,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2036.9968531366478,
+     "overWater": true
+    },
+    {
+     "step": 360,
+     "position": [
+      148.22876335472517,
+      2055.3157851455117,
+      -73.99809397622636
+     ],
+     "velocity": [
+      17.899687068706417,
+      40.02523480093053,
+      -18.205105045684622
+     ],
+     "yaw": 2.364653497275624,
+     "pitch": 1.0029963703854279,
+     "bank": -0.8486668325557623,
+     "yawRate": 0.48154130809052875,
+     "speed": 47.47466764235056,
+     "mode": "flying",
+     "hoverBlend": 9.35762296884033e-14,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2055.3157851455117,
+     "overWater": true
+    },
+    {
+     "step": 390,
+     "position": [
+      154.39301321503666,
+      2074.5741859193026,
+      -81.96222095624496
+     ],
+     "velocity": [
+      8.318491282923672,
+      36.22434962617151,
+      -14.240786825481216
+     ],
+     "yaw": 2.612922935144313,
+     "pitch": 1.143557515116557,
+     "bank": -0.8243486265898408,
+     "yawRate": 0.5074680083130132,
+     "speed": 39.802020205914026,
+     "mode": "flying",
+     "hoverBlend": 7.681204685202233e-15,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2074.5741859193026,
+     "overWater": true
+    },
+    {
+     "step": 420,
+     "position": [
+      157.1377451800528,
+      2091.037739303535,
+      -88.40221632745072
+     ],
+     "velocity": [
+      3.2448293054568818,
+      29.67599194407828,
+      -11.649943053104593
+     ],
+     "yaw": 2.869949937302402,
+     "pitch": 1.1838289573341851,
+     "bank": -0.7438386340340897,
+     "yawRate": 0.5180196696153766,
+     "speed": 32.045508081900195,
+     "mode": "flying",
+     "hoverBlend": 6.305116760147109e-16,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2091.037739303535,
+     "overWater": true
+    },
+    {
+     "step": 450,
+     "position": [
+      157.88271522977564,
+      2104.0514482333188,
+      -93.5331328175448
+     ],
+     "velocity": [
+      0.10715264750668653,
+      22.577572968654756,
+      -8.897686603741757
+     ],
+     "yaw": 3.1295504821032565,
+     "pitch": 1.1953669187060134,
+     "bank": -0.6267401105246349,
+     "yawRate": 0.5197574958143382,
+     "speed": 24.267820457206355,
+     "mode": "flying",
+     "hoverBlend": 5.175555005801971e-17,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2104.0514482333188,
+     "overWater": true
+    },
+    {
+     "step": 480,
+     "position": [
+      157.377046855158,
+      2114.729328627703,
+      -97.67384031607617
+     ],
+     "velocity": [
+      -2.036069172120896,
+      21.259359827630796,
+      -8.044026194923289
+     ],
+     "yaw": -2.8936837409332643,
+     "pitch": 1.1986725999850296,
+     "bank": -0.5528326907953105,
+     "yawRate": 0.5199703038035876,
+     "speed": 22.821312744427196,
+     "mode": "flying",
+     "hoverBlend": 4.248354255291677e-18,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2114.729328627703,
+     "overWater": true
+    },
+    {
+     "step": 510,
+     "position": [
+      155.83657733227778,
+      2125.360246153857,
+      -101.50635429056845
+     ],
+     "velocity": [
+      -4.025033848241047,
+      21.263362775868462,
+      -7.231352456593572
+     ],
+     "yaw": -2.6336897309943903,
+     "pitch": 1.1996196935283587,
+     "bank": -0.5448009227467441,
+     "yawRate": 0.5199963635098547,
+     "speed": 22.81718546116406,
+     "mode": "flying",
+     "hoverBlend": 3.4872615319945245e-19,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2125.360246153857,
+     "overWater": true
+    },
+    {
+     "step": 540,
+     "position": [
+      153.36611012755523,
+      2135.992281306558,
+      -104.80911532107189
+     ],
+     "velocity": [
+      -5.744482794696758,
+      21.264507324729117,
+      -5.949094195702261
+     ],
+     "yaw": -2.37369046451588,
+     "pitch": 1.1998910403715979,
+     "bank": -0.5439691644609495,
+     "yawRate": 0.5199995546884053,
+     "speed": 22.816004823179796,
+     "mode": "flying",
+     "hoverBlend": 2.862518580549462e-20,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2135.992281306558,
+     "overWater": true
+    },
+    {
+     "step": 570,
+     "position": [
+      150.13092760226854,
+      2146.6246362571983,
+      -107.3646559531315
+     ],
+     "velocity": [
+      -7.079286253563584,
+      21.26483505355822,
+      -4.2714334833944285
+     ],
+     "yaw": -2.1136905543403017,
+     "pitch": 1.199968782543799,
+     "bank": -0.5438772895275924,
+     "yawRate": 0.5199999454687327,
+     "speed": 22.815666716491013,
+     "mode": "flying",
+     "hoverBlend": 2.3496983374528773e-21,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2146.6246362571983,
+     "overWater": true
+    },
+    {
+     "step": 600,
+     "position": [
+      146.347948812019,
+      2157.257082798053,
+      -109.00239385250424
+     ],
+     "velocity": [
+      -7.9389652193193765,
+      21.26492893385386,
+      -2.3077817726530734
+     ],
+     "yaw": -1.853690565339883,
+     "pitch": 1.1999910560490525,
+     "bank": -0.5438655382581257,
+     "yawRate": 0.5199999933222957,
+     "speed": 22.81556985976041,
+     "mode": "flying",
+     "hoverBlend": 1.9287498479639695e-22,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 2157.257082798053,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    }
+   ]
+  },
+  {
+   "name": "brake-hover-relaunch",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     300,
+     0
+    ],
+    "yaw": 0,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 180,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": true,
+      "brake": false
+     }
+    },
+    {
+     "steps": 300,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": true
+     }
+    },
+    {
+     "steps": 6,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": true,
+      "brake": false
+     }
+    },
+    {
+     "steps": 120,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      0,
+      300,
+      27.68333333333334
+     ],
+     "velocity": [
+      0,
+      0,
+      66.00000000000003
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 66.00000000000003,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0.7768698398515701,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      0,
+      300,
+      66.36666666666669
+     ],
+     "velocity": [
+      0,
+      0,
+      88.00000000000006
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 88.00000000000006,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0.950212931632136,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      0,
+      300,
+      115.98666666666671
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0.9888910034617576,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      0,
+      300,
+      169.98666666666696
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0.9975212478233337,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      0,
+      300,
+      223.9866666666673
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0.9994469156298522,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      0,
+      300,
+      277.98666666666765
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0.9998765901959134,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      0,
+      300,
+      326.8200000000009
+     ],
+     "velocity": [
+      0,
+      0,
+      87.99999999999986
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 87.99999999999986,
+     "mode": "flying",
+     "hoverBlend": 5.315785254424468e-8,
+     "boostBlend": 0.47230825807728305,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      0,
+      300,
+      365.6533333333342
+     ],
+     "velocity": [
+      0,
+      0,
+      67.99999999999972
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 67.99999999999972,
+     "mode": "flying",
+     "hoverBlend": 9.237449661970682e-9,
+     "boostBlend": 0.22310262369907924,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      0,
+      300,
+      394.4866666666674
+     ],
+     "velocity": [
+      0,
+      0,
+      47.99999999999975
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 47.99999999999975,
+     "mode": "flying",
+     "hoverBlend": 1.605228055185627e-9,
+     "boostBlend": 0.10538621726420967,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      0,
+      300,
+      413.3200000000006
+     ],
+     "velocity": [
+      0,
+      0,
+      27.999999999999797
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 27.999999999999797,
+     "mode": "flying",
+     "hoverBlend": 0.0027280114835079375,
+     "boostBlend": 0.049780924155510234,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 330,
+     "position": [
+      0,
+      300,
+      422.1533333333339
+     ],
+     "velocity": [
+      0,
+      0,
+      7.999999999999784
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 7.999999999999784,
+     "mode": "flying",
+     "hoverBlend": 0.5144232438495534,
+     "boostBlend": 0.023514843535600235,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 360,
+     "position": [
+      0,
+      300,
+      423.7646430416102
+     ],
+     "velocity": [
+      0,
+      0,
+      1.6591316467262376
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 1.6591316467262376,
+     "mode": "hover",
+     "hoverBlend": 0.9036592613097397,
+     "boostBlend": 0.011107625579155794,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 390,
+     "position": [
+      0,
+      300,
+      424.258591390385
+     ],
+     "velocity": [
+      0,
+      0,
+      0.5522769492435429
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 0.5522769492435429,
+     "mode": "hover",
+     "hoverBlend": 0.9805491403174035,
+     "boostBlend": 0.005246870803963732,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 420,
+     "position": [
+      0,
+      300,
+      424.42301251253264
+     ],
+     "velocity": [
+      0,
+      0,
+      0.18383702659616777
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 0.18383702659616777,
+     "mode": "hover",
+     "hoverBlend": 0.9960729391580811,
+     "boostBlend": 0.00247844627434582,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 450,
+     "position": [
+      0,
+      300,
+      424.47774354964486
+     ],
+     "velocity": [
+      0,
+      0,
+      0.061194030266899124
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 0.061194030266899124,
+     "mode": "hover",
+     "hoverBlend": 0.9992071400900635,
+     "boostBlend": 0.0011707351227665441,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 480,
+     "position": [
+      0,
+      300,
+      424.4959619292803
+     ],
+     "velocity": [
+      0,
+      0,
+      0.020369723170795828
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 0.020369723170795828,
+     "mode": "hover",
+     "hoverBlend": 0.9998399243449262,
+     "boostBlend": 0.0005530161141140604,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 510,
+     "position": [
+      0,
+      300,
+      446.49628920195477
+     ],
+     "velocity": [
+      0,
+      0,
+      43.26666666666675
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 43.26666666666675,
+     "mode": "flying",
+     "hoverBlend": 0.08920497743254618,
+     "boostBlend": 0.14246681592677346,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 540,
+     "position": [
+      0,
+      300,
+      466.70878920195486
+     ],
+     "velocity": [
+      0,
+      0,
+      37.76666666666685
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 37.76666666666685,
+     "mode": "flying",
+     "hoverBlend": 0.007322390449795485,
+     "boostBlend": 0.06729655871931857,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 570,
+     "position": [
+      0,
+      300,
+      484.3226780908438
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.000601058409995113,
+     "boostBlend": 0.03178864345357773,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 600,
+     "position": [
+      0,
+      300,
+      501.3226780908437
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.00004933787875733172,
+     "boostBlend": 0.015015891924479713,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    },
+    {
+     "step": 80,
+     "type": "boom"
+    },
+    {
+     "step": 336,
+     "type": "hover"
+    },
+    {
+     "step": 481,
+     "type": "launch"
+    }
+   ]
+  },
+  {
+   "name": "hover-climb-turn",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     80,
+     0
+    ],
+    "yaw": 0.3,
+    "launch": false
+   },
+   "segments": [
+    {
+     "steps": 120,
+     "controls": {
+      "steerX": 0.5,
+      "steerY": 1,
+      "boost": false,
+      "brake": false
+     }
+    },
+    {
+     "steps": 90,
+     "controls": {
+      "steerX": 0,
+      "steerY": -0.6,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      0,
+      82.47463355001555,
+      0
+     ],
+     "velocity": [
+      0,
+      7.768698398515703,
+      0
+     ],
+     "yaw": 0.11372296346737513,
+     "pitch": 0,
+     "bank": 0.09492111478573684,
+     "yawRate": -0.5278011257912582,
+     "speed": 7.768698398515703,
+     "mode": "hover",
+     "hoverBlend": 1,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 82.47463355001555,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      0,
+      86.91114812959707,
+      0
+     ],
+     "velocity": [
+      0,
+      9.502129316321362,
+      0
+     ],
+     "yaw": -0.16546814971569837,
+     "pitch": 0,
+     "bank": 0.13473052826615267,
+     "yawRate": -0.5711256804755259,
+     "speed": 9.502129316321362,
+     "mode": "hover",
+     "hoverBlend": 1,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 86.91114812959707,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      0,
+      91.78541753749778,
+      0
+     ],
+     "velocity": [
+      0,
+      9.88891003461758,
+      0
+     ],
+     "yaw": -0.4522861147527647,
+     "pitch": 0,
+     "bank": 0.14233142383020544,
+     "yawRate": -0.5746819764871649,
+     "speed": 9.88891003461758,
+     "mode": "hover",
+     "hoverBlend": 1,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 91.78541753749778,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      0,
+      96.75736325034707,
+      0
+     ],
+     "velocity": [
+      0,
+      9.975212478233338,
+      0
+     ],
+     "yaw": -0.7397301299137711,
+     "pitch": 0,
+     "bank": 0.14354177004959076,
+     "yawRate": -0.5749738950403867,
+     "speed": 9.975212478233338,
+     "mode": "hover",
+     "hoverBlend": 1,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 96.75736325034707,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      0,
+      97.79168981273736,
+      0
+     ],
+     "velocity": [
+      0,
+      -2.435448281326599,
+      0
+     ],
+     "yaw": -0.8409484978657144,
+     "pitch": 0,
+     "bank": 0.048799370757512894,
+     "yawRate": -0.04719673138316795,
+     "speed": 2.435448281326599,
+     "mode": "hover",
+     "hoverBlend": 1,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 97.79168981273736,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      0,
+      95.69186974469456,
+      0
+     ],
+     "velocity": [
+      0,
+      -5.204641004155044,
+      0
+     ],
+     "yaw": -0.849257007459763,
+     "pitch": 0,
+     "bank": 0.009015367918139986,
+     "yawRate": -0.0038741436306398685,
+     "speed": 5.204641004155044,
+     "mode": "hover",
+     "hoverBlend": 1,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 95.69186974469456,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      0,
+      92.89272703707456,
+      0
+     ],
+     "velocity": [
+      0,
+      -5.82253141988162,
+      0
+     ],
+     "yaw": -0.8499390114583564,
+     "pitch": 0,
+     "bank": 0.0014180117930245957,
+     "yawRate": -0.00031800907458986023,
+     "speed": 5.82253141988162,
+     "mode": "hover",
+     "hoverBlend": 1,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 92.89272703707456,
+     "overWater": true
+    }
+   ],
+   "events": []
+  },
+  {
+   "name": "sea-skim",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     60,
+     0
+    ],
+    "yaw": 0,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 360,
+     "controls": {
+      "steerX": 0,
+      "steerY": -1,
+      "boost": true,
+      "brake": false
+     }
+    },
+    {
+     "steps": 120,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      0,
+      45.595022893596166,
+      23.03829277357482
+     ],
+     "velocity": [
+      0,
+      -50.7637241909226,
+      44.04070624685315
+     ],
+     "yaw": 0,
+     "pitch": -0.8561942437677723,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 67.2052044149385,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0.7768698398515701,
+     "surfaceRush": 0,
+     "groundClearance": 45.595022893596166,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      0,
+      11.882314397861983,
+      44.03648247620879
+     ],
+     "velocity": [
+      0,
+      -81.40633225874184,
+      41.279806577391184
+     ],
+     "yaw": 0,
+     "pitch": -1.1014980016513214,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 91.27438503154924,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0.950212931632136,
+     "surfaceRush": 0.00004084050564444699,
+     "groundClearance": 11.882314397861983,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      0,
+      1.2,
+      88.27278429443777
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0.9888910034617576,
+     "surfaceRush": 0.9324219822631864,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      0,
+      1.2,
+      143.71798861926047
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0.9975212478233337,
+     "surfaceRush": 0.9966354886107724,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      0,
+      1.2,
+      199.16319294408348
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0.9994469156298522,
+     "surfaceRush": 0.9998324908414401,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      0,
+      1.2,
+      254.6083972689065
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0.9998765901959134,
+     "surfaceRush": 0.9999916602100706,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      0,
+      1.2,
+      310.0536015937287
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0.9999724635506503,
+     "surfaceRush": 0.9999995847863086,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      0,
+      1.2,
+      365.49880591855083
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0.9999938557876467,
+     "surfaceRush": 0.9999999793277277,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      0,
+      1.2,
+      420.944010243373
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 1.6918979226151521e-10,
+     "boostBlend": 0.9999986290409136,
+     "surfaceRush": 0.9999999989707883,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      0,
+      1.2,
+      476.38921456819514
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 1.3887943864964216e-11,
+     "boostBlend": 0.9999996940976794,
+     "surfaceRush": 0.9999999999487585,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 330,
+     "position": [
+      0,
+      1.2,
+      531.8344188930179
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 1.139991853044373e-12,
+     "boostBlend": 0.9999999317439661,
+     "surfaceRush": 0.9999999999974488,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 360,
+     "position": [
+      0,
+      1.2,
+      587.2796232178417
+     ],
+     "velocity": [
+      0,
+      0,
+      110.89040864964525
+     ],
+     "yaw": 0,
+     "pitch": -0.04,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 111.31471070039835,
+     "mode": "flying",
+     "hoverBlend": 9.35762296884033e-14,
+     "boostBlend": 0.9999999847700202,
+     "surfaceRush": 0.9999999999998729,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 390,
+     "position": [
+      0,
+      1.2,
+      641.5007232918822
+     ],
+     "velocity": [
+      0,
+      0,
+      105.80776213614267
+     ],
+     "yaw": 0,
+     "pitch": -0.011460191874407593,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 105.81471070039824,
+     "mode": "flying",
+     "hoverBlend": 7.681204685202233e-15,
+     "boostBlend": 0.4723665455468808,
+     "surfaceRush": 0.9999999999999937,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 420,
+     "position": [
+      0,
+      1.2,
+      692.9860428984686
+     ],
+     "velocity": [
+      0,
+      0,
+      100.31416996872078
+     ],
+     "yaw": 0,
+     "pitch": -0.0032833999449559475,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 100.31471070039812,
+     "mode": "flying",
+     "hoverBlend": 6.305116760147109e-16,
+     "boostBlend": 0.22313015675016132,
+     "surfaceRush": 0.9999999999999994,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 450,
+     "position": [
+      0,
+      1.2,
+      741.7224714340188
+     ],
+     "velocity": [
+      0,
+      0,
+      94.81466874797347
+     ],
+     "yaw": 0,
+     "pitch": -0.0009407098342403623,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 94.81471070039801,
+     "mode": "flying",
+     "hoverBlend": 5.175555005801971e-17,
+     "boostBlend": 0.10539922295663583,
+     "surfaceRush": 0.9999999999999994,
+     "groundClearance": 1.2,
+     "overWater": true
+    },
+    {
+     "step": 480,
+     "position": [
+      0,
+      1.2,
+      787.7089862058732
+     ],
+     "velocity": [
+      0,
+      0,
+      89.31470745649264
+     ],
+     "yaw": 0,
+     "pitch": -0.000269517879963418,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 89.3147107003979,
+     "mode": "flying",
+     "hoverBlend": 4.248354255291677e-18,
+     "boostBlend": 0.04978706760960761,
+     "surfaceRush": 0.9999999999999994,
+     "groundClearance": 1.2,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    },
+    {
+     "step": 68,
+     "type": "splash"
+    },
+    {
+     "step": 75,
+     "type": "boom"
+    }
+   ]
+  },
+  {
+   "name": "tower-glance",
+   "tower": {
+    "min": [
+     -20,
+     0,
+     60
+    ],
+    "max": [
+     20,
+     400,
+     100
+    ]
+   },
+   "smash": "none",
+   "start": {
+    "position": [
+     5,
+     100,
+     0
+    ],
+    "yaw": 0,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 240,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": true,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      5,
+      100,
+      27.68333333333334
+     ],
+     "velocity": [
+      0,
+      0,
+      66.00000000000003
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 66.00000000000003,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0.7768698398515701,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      5,
+      100,
+      57.28333333333333
+     ],
+     "velocity": [
+      2.4084720383231285e-15,
+      0,
+      -19.66666666666667
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 19.66666666666667,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0.950212931632136,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      5,
+      100,
+      41.76666666666665
+     ],
+     "velocity": [
+      5.102694996447309e-15,
+      0,
+      -41.6666666666667
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 41.6666666666667,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0.9888910034617576,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      5,
+      100,
+      15.24999999999996
+     ],
+     "velocity": [
+      7.79691795457149e-15,
+      0,
+      -63.66666666666673
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 63.66666666666673,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0.9975212478233337,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      5,
+      100,
+      -22.26666666666675
+     ],
+     "velocity": [
+      1.049114091269567e-14,
+      0,
+      -85.66666666666676
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 85.66666666666676,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0.9994469156298522,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      5,
+      100,
+      -70.78333333333346
+     ],
+     "velocity": [
+      1.318536387081985e-14,
+      0,
+      -107.66666666666679
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 107.66666666666679,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0.9998765901959134,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      5,
+      100,
+      -124.78333333333337
+     ],
+     "velocity": [
+      1.3226185430791415e-14,
+      0,
+      -108
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0.9999724635506503,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      5,
+      100,
+      -178.7833333333337
+     ],
+     "velocity": [
+      1.3226185430791415e-14,
+      0,
+      -108
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0.9999938557876467,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    },
+    {
+     "step": 55,
+     "type": "impact",
+     "detail": "glanced"
+    },
+    {
+     "step": 174,
+     "type": "boom"
+    }
+   ]
+  },
+  {
+   "name": "tower-burst",
+   "tower": {
+    "min": [
+     -20,
+     0,
+     60
+    ],
+    "max": [
+     20,
+     400,
+     100
+    ]
+   },
+   "smash": "burst",
+   "start": {
+    "position": [
+     0,
+     100,
+     -300
+    ],
+    "yaw": 0,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 300,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": true,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      0,
+      100,
+      -272.3166666666667
+     ],
+     "velocity": [
+      0,
+      0,
+      66.00000000000003
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 66.00000000000003,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0.7768698398515701,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      0,
+      100,
+      -233.63333333333344
+     ],
+     "velocity": [
+      0,
+      0,
+      88.00000000000006
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 88.00000000000006,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0.950212931632136,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      0,
+      100,
+      -184.01333333333343
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0.9888910034617576,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      0,
+      100,
+      -130.0133333333331
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0.9975212478233337,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      0,
+      100,
+      -76.01333333333316
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0.9994469156298522,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      0,
+      100,
+      -22.01333333333323
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0.9998765901959134,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      0,
+      100,
+      31.986666666666785
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0.9999724635506503,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      0,
+      100,
+      80.24666666666667
+     ],
+     "velocity": [
+      0,
+      0,
+      90.92000000000002
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 90.92000000000002,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0.9999938557876467,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      0,
+      100,
+      131.0726666666667
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.6918979226151521e-10,
+     "boostBlend": 0.9999986290409136,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      0,
+      100,
+      185.07266666666703
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.3887943864964216e-11,
+     "boostBlend": 0.9999996940976794,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    },
+    {
+     "step": 80,
+     "type": "boom"
+    },
+    {
+     "step": 225,
+     "type": "smash",
+     "detail": "topple"
+    }
+   ]
+  },
+  {
+   "name": "tower-dent",
+   "tower": {
+    "min": [
+     -20,
+     0,
+     60
+    ],
+    "max": [
+     20,
+     400,
+     100
+    ]
+   },
+   "smash": "dent",
+   "start": {
+    "position": [
+     0,
+     100,
+     20
+    ],
+    "yaw": 0,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 180,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": false,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      0,
+      100,
+      40.5791666666667
+     ],
+     "velocity": [
+      0,
+      0,
+      38.5000000000001
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 38.5000000000001,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      0,
+      100,
+      58.462500000000105
+     ],
+     "velocity": [
+      0,
+      0,
+      34
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      1.1838252391757739e-15,
+      100,
+      49.13333333333333
+     ],
+     "velocity": [
+      2.9064950699763814e-15,
+      0,
+      -23.733333333333306
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 23.733333333333306,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      2.89016644598775e-15,
+      100,
+      35.20000000000002
+     ],
+     "velocity": [
+      3.886212509294261e-15,
+      0,
+      -31.733333333333277
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 31.733333333333277,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      4.954648805617044e-15,
+      100,
+      18.34222222222225
+     ],
+     "velocity": [
+      4.1637991171010006e-15,
+      0,
+      -34
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      7.0365483641675465e-15,
+      100,
+      1.3422222222222575
+     ],
+     "velocity": [
+      4.1637991171010006e-15,
+      0,
+      -34
+     ],
+     "yaw": 3.141592653589793,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 34,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0,
+     "surfaceRush": 0,
+     "groundClearance": 100,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    },
+    {
+     "step": 61,
+     "type": "impact",
+     "detail": "dented"
+    }
+   ]
+  },
+  {
+   "name": "world-edge",
+   "tower": null,
+   "smash": "none",
+   "start": {
+    "position": [
+     0,
+     300,
+     5800
+    ],
+    "yaw": 0,
+    "launch": true
+   },
+   "segments": [
+    {
+     "steps": 900,
+     "controls": {
+      "steerX": 0,
+      "steerY": 0,
+      "boost": true,
+      "brake": false
+     }
+    }
+   ],
+   "samples": [
+    {
+     "step": 30,
+     "position": [
+      0,
+      300,
+      5827.6833333333325
+     ],
+     "velocity": [
+      0,
+      0,
+      66.00000000000003
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 66.00000000000003,
+     "mode": "flying",
+     "hoverBlend": 0.08208499862389887,
+     "boostBlend": 0.7768698398515701,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 60,
+     "position": [
+      0,
+      300,
+      5866.366666666666
+     ],
+     "velocity": [
+      0,
+      0,
+      88.00000000000006
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 88.00000000000006,
+     "mode": "flying",
+     "hoverBlend": 0.0067379469990854835,
+     "boostBlend": 0.950212931632136,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 90,
+     "position": [
+      0,
+      300,
+      5915.986666666667
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.0005530843701478357,
+     "boostBlend": 0.9888910034617576,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 120,
+     "position": [
+      0,
+      300,
+      5969.986666666672
+     ],
+     "velocity": [
+      0,
+      0,
+      108
+     ],
+     "yaw": 0,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.000045399929762485085,
+     "boostBlend": 0.9975212478233337,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 150,
+     "position": [
+      -0.008672092190869462,
+      300,
+      6023.986663101658
+     ],
+     "velocity": [
+      -0.13942936362420694,
+      0,
+      107.99990999742805
+     ],
+     "yaw": -0.0016152938870007557,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 0.000003726653172078696,
+     "boostBlend": 0.9994469156298522,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 180,
+     "position": [
+      -0.9395498302154083,
+      300,
+      6077.973867211132
+     ],
+     "velocity": [
+      -4.957518012917628,
+      0,
+      107.88615766237854
+     ],
+     "yaw": -0.04911952855769678,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 3.059023205018283e-7,
+     "boostBlend": 0.9998765901959134,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 210,
+     "position": [
+      -7.319871578470487,
+      300,
+      6131.532088204034
+     ],
+     "velocity": [
+      -22.5701363458481,
+      0,
+      105.615287460338
+     ],
+     "yaw": -0.21868565108995783,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.510999155744006e-8,
+     "boostBlend": 0.9999724635506503,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 240,
+     "position": [
+      -26.424858914333143,
+      300,
+      6181.78771934958
+     ],
+     "velocity": [
+      -54.65764251757297,
+      0,
+      93.14795818707569
+     ],
+     "yaw": -0.5437774150305322,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.0611536224385814e-9,
+     "boostBlend": 0.9999938557876467,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 270,
+     "position": [
+      -62.956801228194585,
+      300,
+      6220.96181504292
+     ],
+     "velocity": [
+      -88.96885053310741,
+      0,
+      61.225351242909106
+     ],
+     "yaw": -0.9835568830205642,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.6918979226151521e-10,
+     "boostBlend": 0.9999986290409136,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 300,
+     "position": [
+      -112.97152381841022,
+      300,
+      6240.050590629085
+     ],
+     "velocity": [
+      -106.82504218667869,
+      0,
+      15.88742779100253
+     ],
+     "yaw": -1.4374353949865106,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.3887943864964216e-11,
+     "boostBlend": 0.9999996940976794,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 330,
+     "position": [
+      -166.55010317133605,
+      300,
+      6236.897610157908
+     ],
+     "velocity": [
+      -105.00378122329779,
+      0,
+      -25.262737951572394
+     ],
+     "yaw": -1.817939600151658,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.139991853044373e-12,
+     "boostBlend": 0.9999999317439661,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 360,
+     "position": [
+      -216.33651934998935,
+      300,
+      6216.442645085576
+     ],
+     "velocity": [
+      -93.87549495462845,
+      0,
+      -53.39842176528747
+     ],
+     "yaw": -2.095635901648163,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 9.35762296884033e-14,
+     "boostBlend": 0.9999999847700202,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 390,
+     "position": [
+      -260.17769765663513,
+      300,
+      6185.050556922831
+     ],
+     "velocity": [
+      -82.20183022184932,
+      0,
+      -70.04897649629335
+     ],
+     "yaw": -2.2814923390896182,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 7.681204685202233e-15,
+     "boostBlend": 0.9999999966017322,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 420,
+     "position": [
+      -298.8555370391013,
+      300,
+      6147.411567585306
+     ],
+     "velocity": [
+      -73.3632993850796,
+      0,
+      -79.25797312154268
+     ],
+     "yaw": -2.3977782871061675,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 6.305116760147109e-16,
+     "boostBlend": 0.9999999992417439,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 450,
+     "position": [
+      -333.97163583448776,
+      300,
+      6106.402327285834
+     ],
+     "velocity": [
+      -67.79856278386043,
+      0,
+      -84.06756142795469
+     ],
+     "yaw": -2.464514615423019,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 5.175555005801971e-17,
+     "boostBlend": 0.9999999998308101,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 480,
+     "position": [
+      -367.03655744511855,
+      300,
+      6063.7122169431095
+     ],
+     "velocity": [
+      -64.94087976444574,
+      0,
+      -86.294160494322
+     ],
+     "yaw": -2.497133624147437,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 4.248354255291677e-18,
+     "boostBlend": 0.9999999999622486,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 510,
+     "position": [
+      -399.1912285402724,
+      300,
+      6020.3296573510615
+     ],
+     "velocity": [
+      -63.94357311231788,
+      0,
+      -87.03573666965575
+     ],
+     "yaw": -2.508107539932674,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 3.4872615319945245e-19,
+     "boostBlend": 0.9999999999915765,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 540,
+     "position": [
+      -431.1201267923466,
+      300,
+      5976.780315580258
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.862518580549462e-20,
+     "boostBlend": 0.9999999999981204,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 570,
+     "position": [
+      -463.03882395521816,
+      300,
+      5933.223493250984
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.3496983374528773e-21,
+     "boostBlend": 0.9999999999995807,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 600,
+     "position": [
+      -494.95752111808974,
+      300,
+      5889.66667092171
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.9287498479639695e-22,
+     "boostBlend": 0.9999999999999063,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 630,
+     "position": [
+      -526.8762182809605,
+      300,
+      5846.109848592436
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.5832142861596768e-23,
+     "boostBlend": 0.9999999999999791,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 660,
+     "position": [
+      -558.7949154438304,
+      300,
+      5802.553026263162
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.2995814250075413e-24,
+     "boostBlend": 0.9999999999999953,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 690,
+     "position": [
+      -590.7136126067003,
+      300,
+      5758.996203933888
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 1.0667613948338864e-25,
+     "boostBlend": 0.9999999999999989,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 720,
+     "position": [
+      -622.6323097695702,
+      300,
+      5715.439381604614
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 8.756510762696808e-27,
+     "boostBlend": 0.9999999999999989,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 750,
+     "position": [
+      -654.55100693244,
+      300,
+      5671.88255927534
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 7.187781739061236e-28,
+     "boostBlend": 0.9999999999999989,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 780,
+     "position": [
+      -686.4697040953099,
+      300,
+      5628.325736946066
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 5.900090541597272e-29,
+     "boostBlend": 0.9999999999999989,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 810,
+     "position": [
+      -718.3884012581798,
+      300,
+      5584.768914616792
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 4.843089239878909e-30,
+     "boostBlend": 0.9999999999999989,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 840,
+     "position": [
+      -750.3070984210497,
+      300,
+      5541.212092287518
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 3.975449735908798e-31,
+     "boostBlend": 0.9999999999999989,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 870,
+     "position": [
+      -782.2257955839195,
+      300,
+      5497.655269958244
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 3.26324786101453e-32,
+     "boostBlend": 0.9999999999999989,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    },
+    {
+     "step": 900,
+     "position": [
+      -814.1444927467894,
+      300,
+      5454.0984476289705
+     ],
+     "velocity": [
+      -63.837394325742345,
+      0,
+      -87.11364465857044
+     ],
+     "yaw": -2.5091868773957153,
+     "pitch": 0,
+     "bank": 0,
+     "yawRate": 0,
+     "speed": 108,
+     "mode": "flying",
+     "hoverBlend": 2.6786369618081876e-33,
+     "boostBlend": 0.9999999999999989,
+     "surfaceRush": 0,
+     "groundClearance": 300,
+     "overWater": true
+    }
+   ],
+   "events": [
+    {
+     "step": 0,
+     "type": "launch"
+    },
+    {
+     "step": 80,
+     "type": "boom"
+    },
+    {
+     "step": 137,
+     "type": "edge"
+    }
+   ]
+  }
+ ]
+}

@@ -1,5 +1,13 @@
 # Aloft — agent guide
 
+## Projects in this repo
+
+- **`aloft-v2/` — active development.** Rigid-body collapse, collapse audio, powers, Godot 4.7 pivot
+  scaffold. Read `aloft-v2/AGENTS.md` before working there.
+- **Repository root — v1, frozen reference.** Everything below describes v1. Change it only when asked.
+
+## v1
+
 Superhero flight game over a golden-hour archipelago city. Three.js + Vite, no backend.
 Everything is procedural (no asset files); all sound is synthesised with Web Audio.
 

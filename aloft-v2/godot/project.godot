@@ -1,0 +1,27 @@
+; Aloft — Godot 4.7 pivot scaffold. The web game (../web) is the reference implementation; this
+; project runs the shared conformance vectors and reads the same content JSON.
+
+config_version=5
+
+[application]
+
+config/name="Aloft"
+config/description="Superhero flight over a golden-hour city (Godot 4.7 pivot scaffold)."
+config/features=PackedStringArray("4.7")
+
+[autoload]
+
+Content="*res://autoload/content.gd"
+Events="*res://autoload/events.gd"
+InputActions="*res://autoload/input_actions.gd"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+common/max_physics_steps_per_frame=4
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="gl_compatibility"
