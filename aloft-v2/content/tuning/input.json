@@ -1,0 +1,17 @@
+{
+  "$notes": {
+    "about": "Input shaping: dead zones, response curves, ramps. Keep controls forgiving.",
+    "mouseRadius": "share of the shorter viewport side for full stick deflection",
+    "curve": "stick response exponent; >1 keeps small movements gentle",
+    "keyRise": "keyboard stick ramp up (1/s)", "keyFall": "keyboard stick ramp down (1/s)",
+    "touchRadius": "px for full deflection", "authorityRamp": "seconds for steering to fade in after start/resume"
+  },
+  "mouseRadius": 0.34,
+  "deadZone": 0.075,
+  "curve": 1.55,
+  "keyRise": 4.6,
+  "keyFall": 7,
+  "touchRadius": 64,
+  "gamepadDeadZone": 0.15,
+  "authorityRamp": 0.7
+}

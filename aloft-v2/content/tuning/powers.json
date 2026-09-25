@@ -1,0 +1,22 @@
+{
+  "$notes": {
+    "about": "The hero's powers (web/src/core/power-timelines.ts keeps time, web/src/sim/power-system.ts moves the world).",
+    "slam.windup / recover / cooldown": "seconds of each phase",
+    "slam.instantBelow": "m above the ground (or a roof) under which the slam lands at once",
+    "slam.maxDive": "s a dive may last before it counts as landed",
+    "slam.diveSpeedScale": "dive speed as a share of flight boostSpeed",
+    "slam.radius": "blast radius (m) from a standing slam (min) to a full-speed dive (max)",
+    "slam.mass": "kg the slam lands with: energy = ½ · mass · dive speed²",
+    "slam.nudge": "m/s given to loose pieces at the centre (falls off as (1 − d/R)²)",
+    "grab.reach": "m ahead within which something can be grabbed",
+    "grab.maxMass": "kg: heavier pieces can't be lifted",
+    "grab.holdDistance / holdHeight": "m in front of and above the hero where a held piece rides",
+    "grab.holdResponse": "s for a held piece to catch up with its hold point (spring)",
+    "grab.throwWindup": "s from the second press to the release",
+    "grab.throwSpeed": "m/s added along the view on release",
+    "grab.projectileSeconds": "s a thrown piece damages what it hits",
+    "grab.carrySpeedShare": "share of boost speed the hero can reach while carrying"
+  },
+  "slam": { "windup": 0.25, "recover": 0.6, "cooldown": 2, "instantBelow": 20, "maxDive": 6, "diveSpeedScale": 1.6, "radius": { "min": 25, "max": 60 }, "mass": 150000, "nudge": 22 },
+  "grab": { "reach": 12, "maxMass": 400000, "holdDistance": 6, "holdHeight": 1.5, "holdResponse": 0.12, "throwWindup": 0.15, "throwSpeed": 80, "projectileSeconds": 5, "carrySpeedShare": 0.85 }
+}

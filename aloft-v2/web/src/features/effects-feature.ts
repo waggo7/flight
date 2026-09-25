@@ -1,0 +1,121 @@
+import { Vector3 } from 'three';
+import { damp, smoothstep } from '../core/scalar-math';
+import type { Feature } from '../engine/game-context';
+import { serviceToken } from '../engine/service-registry';
+import { FramePhase } from '../engine/system-phases';
+import { DustPlumes } from '../present/render/effects/dust-plumes';
+import { SpeedEffects } from '../present/render/effects/speed-effects';
+import { CameraToken } from './camera-feature';
+import { FlightToken } from './flight-feature';
+import { SceneToken } from './scene-feature';
+import { SettingsToken } from './settings-feature';
+
+// How flight feels (v1): air streaks, the launch and sonic-boom shockwaves, impact bursts, sea
+// spray, dust plumes, camera kicks and shakes, and the post pass's
+// speed blur, flash and dust veil.
+
+export interface EffectsService {
+  readonly dust: DustPlumes;
+  readonly effects: SpeedEffects;
+  /** A brief white flash (0..1), already scaled for reduced motion by the caller. */
+  flash(amount: number): void;
+  /** 1, or less when the player asked for reduced motion. */
+  readonly motion: number;
+}
+
+export const EffectsToken = serviceToken<EffectsService>('effects');
+
+const DUST_WIND = new Vector3(2.2, 0, 0.7);
+
+export const effectsFeature: Feature = {
+  name: 'effects',
+  install(ctx) {
+    const sceneService = ctx.services.require(SceneToken);
+    const { scene, camera, post, reducedMotion, quality } = sceneService;
+    const flight = ctx.services.require(FlightToken);
+    const rig = ctx.services.require(CameraToken);
+    const dust = new DustPlumes(quality.dustPuffs, () => ctx.random.stream('dust').next());
+    scene.add(dust.mesh);
+    const effects = new SpeedEffects(scene, dust);
+    const settings = ctx.services.require(SettingsToken);
+    const reduced = (): boolean => reducedMotion || settings.current.reducedMotion;
+    let flash = 0;
+    let dustVeil = 0;
+    let droplets = 0;
+    ctx.services.provide(EffectsToken, {
+      dust, effects,
+      get motion() {
+        return reduced() ? 0.35 : 1;
+      },
+      flash(amount) {
+        flash = Math.max(flash, amount);
+      },
+    });
+
+    ctx.events.on('flight:event', (event) => {
+      const model = flight.model;
+      const motion = reduced() ? 0.35 : 1;
+      switch (event.type) {
+        case 'launch':
+          effects.onLaunch(model.position, model.forward);
+          rig.kick(5 * motion);
+          rig.shake(0.25 * motion);
+          break;
+        case 'boom':
+          effects.onBoom(model.position, model.forward);
+          rig.kick(9 * motion);
+          rig.shake(0.55 * motion);
+          flash = Math.max(flash, 0.28 * motion);
+          break;
+        case 'impact':
+          effects.onImpact(event.point, event.normal, event.strength);
+          // First person gets a directional knock off the wall; chase keeps the shake.
+          rig.jolt(event.normal, event.strength * rig.firstPersonBlend * motion);
+          rig.shake((0.25 + event.strength * 0.5) * motion * (1 - rig.firstPersonBlend * 0.7));
+          break;
+        case 'smash':
+          // The hit-stop, knock and camera punch scale with how hard the building pushed back
+          // (impact-recoil-feature); here, the shake and flash of bursting through.
+          rig.shake((0.55 + event.strength * 0.4) * motion);
+          flash = Math.max(flash, 0.1 * motion);
+          break;
+        case 'splash':
+          effects.onSplash(event.point, event.strength);
+          droplets = Math.min(1, droplets + event.strength * 0.6);
+          rig.shake(0.2 * motion);
+          break;
+        default:
+          break;
+      }
+    });
+    ctx.events.on('game:restart', () => {
+      dust.clear();
+      effects.clear();
+      flash = 0;
+      droplets = 0;
+    });
+
+    ctx.systems.addFrame({
+      name: 'effects',
+      phase: FramePhase.Present,
+      frame(realDt) {
+        const simDt = realDt * ctx.loop.timeScale;
+        const view = flight.view;
+        effects.update(simDt, ctx.loop.simTime, { camera, flight: view, projectionScale: sceneService.projectionScale });
+        dust.update(simDt, DUST_WIND);
+        dustVeil = damp(dustVeil, dust.active ? dust.densityAt(camera.position) * 0.7 : 0, 5, realDt);
+        flash = damp(flash, 0, 5, realDt);
+        const blurMotion = reduced() ? 0.3 : 1;
+        post.settings.uSpeedBlur.value = (smoothstep(60, 140, view.speed) * view.boostBlend * 0.55 + view.surfaceRush * 0.18) * blurMotion;
+        post.settings.uDust.value = dustVeil;
+        post.settings.uFlash.value = flash;
+        // Visor: spray beads on the glass while skimming the sea and speed clears it; boosting
+        // presses in from the edges.
+        const spray = view.overWater && view.groundClearance < 8 && view.speed > 25 ? 0.9 : 0;
+        droplets = spray > droplets ? Math.min(spray, droplets + realDt * 1.2) : Math.max(0, droplets - realDt * (0.15 + view.speed / 90));
+        post.settings.uDroplets.value = droplets * rig.firstPersonBlend;
+        post.settings.uVignette.value = 0.36 + view.boostBlend * rig.firstPersonBlend * 0.22 * (reduced() ? 0.3 : 1);
+      },
+    });
+  },
+};

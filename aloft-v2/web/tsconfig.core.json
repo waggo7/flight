@@ -1,0 +1,10 @@
+{
+  // The portable layers (core, engine, sim) must run without a browser: no DOM types here.
+  // This is what keeps them Node-testable and ready to port to Godot.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src/core", "src/engine", "src/sim"]
+}

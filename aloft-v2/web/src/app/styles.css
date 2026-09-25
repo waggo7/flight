@@ -1,0 +1,6 @@
+/* Shell styles on top of the HUD's (present/ui/hud-styles.css): dev overlay and boot errors. */
+.dev-overlay {
+  position: fixed; top: 0.6rem; left: 0.6rem; z-index: 50; margin: 0; padding: 0.5rem 0.7rem; border-radius: 0.4rem;
+  background: rgb(0 0 0 / 0.55); color: #f4efe6; font: 12px/1.45 ui-monospace, monospace; pointer-events: none;
+}
+.boot-error { position: fixed; inset: 1rem; z-index: 60; margin: 0; white-space: pre-wrap; color: #ffb4a8; font: 14px/1.5 ui-monospace, monospace; }

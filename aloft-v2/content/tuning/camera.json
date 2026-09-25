@@ -1,0 +1,26 @@
+{
+  "$notes": {
+    "about": "Chase and first-person framing. Distances in metres, FOV in degrees, follow rates in 1/s.",
+    "pitchShare": "the chase camera follows this share of the hero's pitch, keeping the horizon readable",
+    "turnLead": "seconds of yaw rate the camera looks ahead into a turn",
+    "rollShare": "share of the hero's bank the chase camera rolls with (first person uses the player's comfort setting)",
+    "firstPersonPitchShare": "first person looks where you fly: this share of the hero's pitch",
+    "freeLook": "hold to look around without changing course: max yaw / pitch (rad), response (1/s) while held, returnTime (s) to spring back when released"
+  },
+  "distance": 6.1,
+  "boostDistance": 8.8,
+  "hoverDistance": 5.4,
+  "height": 1.35,
+  "lookAhead": 16,
+  "lookLift": 0.9,
+  "fov": 58,
+  "boostFov": 76,
+  "firstPersonFov": 74,
+  "yawFollow": 5.2,
+  "pitchFollow": 4,
+  "pitchShare": 0.82,
+  "turnLead": 0.22,
+  "rollShare": 0.28,
+  "firstPersonPitchShare": 1,
+  "freeLook": { "maxYaw": 1.92, "maxPitch": 1.22, "response": 14, "returnTime": 0.35 }
+}

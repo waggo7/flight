@@ -1,0 +1,12 @@
+{
+  "source": "v1 src/city-skyline.js (seed 2024)",
+  "counts": {
+    "boxes": 4213,
+    "rounds": 457,
+    "spires": 50,
+    "beacons": 146,
+    "colliders": 4190,
+    "buildings": 2648
+  },
+  "sha256": "5de5df9e17079b7183166877f9f9e743107f073a80f06f8e29e30bf652280668"
+}
