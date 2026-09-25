@@ -5,7 +5,6 @@ import { FramePhase, StepPhase } from '../engine/system-phases';
 import { DestructionView } from '../present/render/city/destruction-view';
 import { CollapseEffects } from '../present/render/effects/collapse-effects';
 import { DestructionSystem } from '../sim/destruction-system';
-import { AudioToken } from './audio-feature';
 import { CameraToken } from './camera-feature';
 import { CityToken } from './city-feature';
 import { EffectsToken } from './effects-feature';
@@ -15,8 +14,8 @@ import { SettingsToken } from './settings-feature';
 import { TimeScaleToken } from './time-scale-feature';
 
 // Buildings that break: the hero's smash goes to the destruction system (rules decide, Rapier
-// moves), its pieces are drawn by the destruction view, and its events turn into dust, sound,
-// camera shake, the first collapse's slow motion and the "Timber!" toast.
+// moves), its pieces are drawn by the destruction view, and its events turn into dust, camera
+// shake, the first collapse's slow motion and the "Timber!" toast (sound: collapse-audio-feature).
 
 export const DestructionToken = serviceToken<DestructionSystem>('destruction');
 
@@ -27,7 +26,6 @@ export const destructionFeature: Feature = {
     const scene = ctx.services.require(SceneToken);
     const { camera } = scene;
     const { dust, motion } = ctx.services.require(EffectsToken);
-    const audio = ctx.services.require(AudioToken);
     const rig = ctx.services.require(CameraToken);
     const time = ctx.services.require(TimeScaleToken);
     const hud = ctx.services.require(HudToken);
@@ -67,8 +65,7 @@ export const destructionFeature: Feature = {
     const distanceTo = (p: { x: number; y: number; z: number }): number => Math.hypot(p.x - camera.position.x, p.y - camera.position.y, p.z - camera.position.z);
 
     ctx.events.on('destruction:damage', ({ crushed, style, direction }) => collapse.crushed(crushed, style, direction));
-    ctx.events.on('destruction:failure', ({ position, height, first }) => {
-      audio.collapse(distanceTo(position), height);
+    ctx.events.on('destruction:failure', ({ first }) => {
       if (!first) return;
       hud.toast('Timber!');
       time.slowMotion(1.1 * motion, 0.35);
@@ -76,8 +73,6 @@ export const destructionFeature: Feature = {
     });
     ctx.events.on('destruction:impact', ({ position, energy, ground }) => {
       const distance = distanceTo(position);
-      const size = clamp(Math.cbrt(energy / 1e6) * 12, 20, 260);
-      if (energy > 5e7) audio.collapseImpact(distance, size);
       // Two bands: a sharp knock for close hits, a heavy low rumble that carries further.
       const loud = Math.log10(Math.max(energy, 1e6) / 1e6);
       rig.shake(clamp(loud * 0.2 - distance / 900, 0, 0.7) * motion);

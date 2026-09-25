@@ -3,6 +3,7 @@ import type { GameLoop } from '../engine/game-loop';
 import { audioFeature } from '../features/audio-feature';
 import { cameraFeature } from '../features/camera-feature';
 import { cityFeature } from '../features/city-feature';
+import { collapseAudioFeature } from '../features/collapse-audio-feature';
 import { controlsFeature } from '../features/controls-feature';
 import { destructionFeature } from '../features/destruction-feature';
 import { devOverlayFeature } from '../features/dev-overlay-feature';
@@ -39,6 +40,7 @@ export function createFeatureList(loop: () => GameLoop): Feature[] {
     sparksFeature,
     audioFeature,
     destructionFeature,
+    collapseAudioFeature,
     gameFlowFeature,
     flightHudFeature,
     devOverlayFeature,

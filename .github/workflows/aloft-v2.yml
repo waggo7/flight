@@ -12,7 +12,7 @@ defaults:
 
 jobs:
   web:
-    name: Typecheck, lint, tests, build, e2e
+    name: Typecheck, lint, tests, build, e2e, audio
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -25,6 +25,7 @@ jobs:
       - run: npm run check
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
+      - run: npm run audio:render
       - uses: actions/upload-artifact@v4
         if: always()
         with:

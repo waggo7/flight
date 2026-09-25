@@ -16,7 +16,8 @@
     "godot:sync": "tsx scripts/godot-sync.ts",
     "godot:check": "tsx scripts/godot-check.ts",
     "e2e": "tsx scripts/screenshots.ts",
-    "look-parity": "tsx scripts/look-parity.ts"
+    "look-parity": "tsx scripts/look-parity.ts",
+    "audio:render": "tsx scripts/audio-render.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.20.0",
