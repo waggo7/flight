@@ -1,0 +1,31 @@
+{
+  "$notes": {
+    "about": "How buildings break. Rules decide what fails (web/src/core: building-structure, crush-planner, support-check); Rapier moves the pieces. Energies in joules, masses in kg, densities in kg/m³ of building volume (most of a building is air).",
+    "punchMass": "kg the hero 'weighs' when smashing: impact energy = ½ · punchMass · speed²",
+    "dentSpeed": "m/s into the wall below which a hit only glances (v1)",
+    "crushEnergy": "J per m³ to pulverise building volume, by facade style",
+    "reserve": "strength margin: a storey carries reserve × its intact load, so it fails when less than 1/reserve of its area survives",
+    "density": "bulk density by facade style (glass towers are lighter)",
+    "roundToughness": "crush-energy multiplier for round towers: they break as whole drums (stiff cores), so a boost hit weakens one and it takes 2–3",
+    "tunnelClearance": "m added to the hero radius for the bore (small: a bore wider than a storey dilutes the hit over three floors)",
+    "pushLever": "s: the punch's momentum shifts the effective load forward by Δv_above × pushLever (an overturning moment loads the far side), so a hit tower leans away from the hero",
+    "maxPushShift": "cap on that shift, as a share of the segment's half-width",
+    "blowOut": "cone of extra damage from the exit face inward: half-angle grows with impact speed; never deeper than maxDepthShare of the path, so the entry side survives as a hinge",
+    "strainRatio": "load ratio from which a storey groans (structure:strain)",
+    "offCentreShare": "centre-of-mass offset, as a share of the survivors' reach, beyond which an overloaded storey crushes its heavy side first instead of pancaking",
+    "maxCrushPasses": "off-centre crush passes before the verdict is taken as is"
+  },
+  "punchMass": 60000,
+  "dentSpeed": 12,
+  "crushEnergy": { "glass": 50000, "stone": 120000, "plain": 150000 },
+  "reserve": { "glass": 1.7, "stone": 2.2, "plain": 2.5 },
+  "density": { "glass": 260, "stone": 330, "plain": 400 },
+  "roundToughness": 4,
+  "tunnelClearance": 0.3,
+  "pushLever": 8,
+  "maxPushShift": 0.9,
+  "blowOut": { "minHalfAngle": 0.436, "maxHalfAngle": 1.047, "minSpeed": 40, "maxSpeed": 110, "maxDepthShare": 0.8 },
+  "strainRatio": 0.7,
+  "offCentreShare": 0.1,
+  "maxCrushPasses": 8
+}

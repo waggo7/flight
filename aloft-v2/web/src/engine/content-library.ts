@@ -3,6 +3,8 @@ import flightJson from '@content/tuning/flight.json';
 import actionsJson from '@content/input/actions.json';
 import inputJson from '@content/tuning/input.json';
 import simulationJson from '@content/tuning/simulation.json';
+import destructionJson from '@content/tuning/destruction.json';
+import type { DestructionTuning } from '../core/destruction-tuning';
 import type { CameraTuning, FlightTuning, InputBindings, InputTuning, SimulationTuning } from '../core/flight-tuning';
 import { arr, int, num, obj, optional, str, validated, type Rule, type Shape } from './content-validation';
 
@@ -39,6 +41,16 @@ export const SIMULATION_SHAPE: Shape = {
   seed: int(0, 2 ** 31),
 };
 
+const perStyle = (min: number, max: number): Rule => obj({ glass: num(min, max), stone: num(min, max), plain: num(min, max) });
+
+export const DESTRUCTION_SHAPE: Shape = {
+  punchMass: num(1000, 1e6), dentSpeed: num(0, 100),
+  crushEnergy: perStyle(1000, 1e7), reserve: perStyle(1, 10), density: perStyle(50, 3000),
+  roundToughness: num(1, 20), tunnelClearance: num(0, 10), pushLever: num(0, 20), maxPushShift: num(0, 2),
+  blowOut: obj({ minHalfAngle: num(0, 1.5), maxHalfAngle: num(0, 1.5), minSpeed: num(0, 300), maxSpeed: num(1, 400), maxDepthShare: num(0, 1) }),
+  strainRatio: num(0.1, 1), offCentreShare: num(0, 1), maxCrushPasses: int(0, 64),
+};
+
 const binding: Rule = obj({
   keys: arr(str(), 0, 8),
   mouse: optional(arr(str(['left', 'right']), 0, 2)),
@@ -60,6 +72,7 @@ export interface ContentLibrary {
   input: InputTuning;
   simulation: SimulationTuning;
   actions: InputBindings;
+  destruction: DestructionTuning;
 }
 
 export function loadContent(): ContentLibrary {
@@ -69,5 +82,6 @@ export function loadContent(): ContentLibrary {
     input: validated<InputTuning>(inputJson, INPUT_SHAPE, 'content/tuning/input.json'),
     simulation: validated<SimulationTuning>(simulationJson, SIMULATION_SHAPE, 'content/tuning/simulation.json'),
     actions: validated<InputBindings>(actionsJson, ACTIONS_SHAPE, 'content/input/actions.json'),
+    destruction: validated<DestructionTuning>(destructionJson, DESTRUCTION_SHAPE, 'content/tuning/destruction.json'),
   };
 }
