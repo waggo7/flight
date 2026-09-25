@@ -701,9 +701,12 @@ export class DestructionSystem {
         if (chunks.length > 1 && chunks.length <= budget) {
           for (const chunk of chunks) pieces.push({ regions: [chunk], level: 2 });
           budget -= chunks.length;
-        } else {
+        } else if (budget > 0 || pieces.length === 0) {
           pieces.push({ regions: [band], level: fragment.level === 0 ? 1 : 2 });
           budget -= 1;
+        } else {
+          // Over budget: what's left stays together with the last piece.
+          pieces[pieces.length - 1]!.regions.push(band);
         }
       }
     }
