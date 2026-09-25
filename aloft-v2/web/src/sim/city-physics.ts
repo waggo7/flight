@@ -1,5 +1,5 @@
 import type RAPIER from '@dimforge/rapier3d-compat';
-import type { CityBlueprint } from '../core/city-blueprint';
+import type { CityBlueprint, PieceRef } from '../core/city-blueprint';
 import type { PhysicsWorld } from './physics-world';
 
 // Builds the static city in Rapier from the blueprint: one fixed body per building, one collider
@@ -26,9 +26,9 @@ export function buildCityPhysics(physics: PhysicsWorld, blueprint: CityBlueprint
     bodies[building.id] = world.createRigidBody(rapier.RigidBodyDesc.fixed());
     colliders[building.id] = [];
   }
-  const add = (buildingId: number, pieceId: number, desc: RAPIER.ColliderDesc): void => {
+  const add = (buildingId: number, piece: PieceRef, desc: RAPIER.ColliderDesc): void => {
     const collider = world.createCollider(desc.setCollisionGroups(cityGroups), bodies[buildingId]);
-    physics.own(collider, { kind: 'building', building: buildingId, id: pieceId });
+    physics.own(collider, { kind: 'building', building: buildingId, id: piece.index, piece });
     colliders[buildingId]!.push(collider);
   };
 
@@ -39,7 +39,7 @@ export function buildCityPhysics(physics: PhysicsWorld, blueprint: CityBlueprint
     const half = Math.sin(box.yaw / 2);
     add(
       box.building,
-      box.index,
+      { kind: 'box', index: box.index },
       rapier.ColliderDesc.cuboid(box.w / 2, box.h / 2, box.d / 2)
         .setTranslation(box.x, box.y0 + box.h / 2, box.z)
         .setRotation({ x: 0, y: half, z: 0, w: Math.cos(box.yaw / 2) }),
@@ -47,10 +47,10 @@ export function buildCityPhysics(physics: PhysicsWorld, blueprint: CityBlueprint
   }
   for (const round of blueprint.rounds) {
     if (!round.collide) continue;
-    add(round.building, round.index, rapier.ColliderDesc.cylinder(round.h / 2, round.radius).setTranslation(round.x, round.y0 + round.h / 2, round.z));
+    add(round.building, { kind: 'round', index: round.index }, rapier.ColliderDesc.cylinder(round.h / 2, round.radius).setTranslation(round.x, round.y0 + round.h / 2, round.z));
   }
   for (const spire of blueprint.spires) {
-    add(spire.building, spire.index, rapier.ColliderDesc.cone(spire.height / 2, spire.radius).setTranslation(spire.x, spire.y + spire.height / 2, spire.z));
+    add(spire.building, { kind: 'spire', index: spire.index }, rapier.ColliderDesc.cone(spire.height / 2, spire.radius).setTranslation(spire.x, spire.y + spire.height / 2, spire.z));
   }
 
   const ground = world.createCollider(

@@ -1,4 +1,5 @@
 import RAPIER from '@dimforge/rapier3d-compat';
+import type { PieceRef } from '../core/city-blueprint';
 import { collisionGroups, type CollisionGroups } from './collision-groups';
 
 // The one place that imports Rapier. Owns the world, the event queue, and the owner table that
@@ -22,6 +23,8 @@ export interface ColliderOwner {
   building: number;
   /** Id within its kind (piece index, actor id, chunk id…). */
   id: number;
+  /** The blueprint piece a building collider stands for (to find it again when the building breaks). */
+  piece?: PieceRef;
   /** False once removed; queries skip dead owners (Rapier's query tree refreshes only on step). */
   alive: boolean;
 }

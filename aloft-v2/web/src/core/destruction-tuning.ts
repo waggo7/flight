@@ -22,6 +22,37 @@ export interface DestructionTuning {
   strainRatio: number;
   offCentreShare: number;
   maxCrushPasses: number;
+  motion: DestructionMotion;
+}
+
+export interface PerProfile {
+  desktop: number;
+  phone: number;
+}
+
+export interface DestructionMotion {
+  solverMassReference: number;
+  spawnClearance: number;
+  maxPushSpeed: number;
+  hingeTilt: number;
+  toppleSpin: number;
+  edgeCrushInterval: number;
+  edgeReserveShare: number;
+  breakupFraction: number;
+  bandStoreys: number;
+  chunkRadius: number;
+  pancakeAccretion: number;
+  pancakeMaxStoreys: PerProfile;
+  generationDecay: number;
+  maxGeneration: number;
+  buildingCooldown: number;
+  impactEnergy: number;
+  freezeAfter: number;
+  debrisLife: PerProfile;
+  debrisBodies: PerProfile;
+  chunkBodies: PerProfile;
+  debrisPerCrushed: number;
+  friction: number;
 }
 
 const STYLE_KEYS = ['glass', 'stone', 'plain'] as const;

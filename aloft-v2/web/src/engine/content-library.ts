@@ -44,12 +44,22 @@ export const SIMULATION_SHAPE: Shape = {
 
 const perStyle = (min: number, max: number): Rule => obj({ glass: num(min, max), stone: num(min, max), plain: num(min, max) });
 
+const perProfile = (min: number, max: number): Rule => obj({ desktop: num(min, max), phone: num(min, max) });
+const perProfileInt = (min: number, max: number): Rule => obj({ desktop: int(min, max), phone: int(min, max) });
+
 export const DESTRUCTION_SHAPE: Shape = {
   punchMass: num(1000, 1e6), dentSpeed: num(0, 100),
   crushEnergy: perStyle(1000, 1e7), reserve: perStyle(1, 10), density: perStyle(50, 3000),
   roundToughness: num(1, 20), tunnelClearance: num(0, 10), pushLever: num(0, 20), maxPushShift: num(0, 2),
   blowOut: obj({ minHalfAngle: num(0, 1.5), maxHalfAngle: num(0, 1.5), minSpeed: num(0, 300), maxSpeed: num(1, 400), maxDepthShare: num(0, 1) }),
   strainRatio: num(0.1, 1), offCentreShare: num(0, 1), maxCrushPasses: int(0, 64),
+  motion: obj({
+    solverMassReference: num(100, 1e7), spawnClearance: num(0, 0.5), maxPushSpeed: num(0, 100), hingeTilt: num(0, 1), toppleSpin: num(0, 2), edgeCrushInterval: num(0, 2), edgeReserveShare: num(0.1, 1),
+    breakupFraction: num(0, 10), bandStoreys: int(1, 40), chunkRadius: num(0, 100), pancakeAccretion: num(0, 1),
+    pancakeMaxStoreys: perProfileInt(0, 200), generationDecay: num(0, 1), maxGeneration: int(0, 8), buildingCooldown: num(0, 30),
+    impactEnergy: num(0, 1e10), freezeAfter: num(0.1, 60), debrisLife: perProfile(1, 600), debrisBodies: perProfileInt(0, 5000),
+    chunkBodies: perProfileInt(0, 5000), debrisPerCrushed: int(0, 8), friction: num(0, 2),
+  }),
 };
 
 const binding: Rule = obj({

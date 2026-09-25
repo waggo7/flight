@@ -13,7 +13,8 @@
     "blowOut": "cone of extra damage from the exit face inward: half-angle grows with impact speed; never deeper than maxDepthShare of the path, so the entry side survives as a hinge",
     "strainRatio": "load ratio from which a storey groans (structure:strain)",
     "offCentreShare": "centre-of-mass offset, as a share of the survivors' reach, beyond which an overloaded storey crushes its heavy side first instead of pancaking",
-    "maxCrushPasses": "off-centre crush passes before the verdict is taken as is"
+    "maxCrushPasses": "off-centre crush passes before the verdict is taken as is",
+    "motion": "how loose pieces move (web/src/sim/destruction-system.ts). solverMassReference: kg; Rapier sees m_sim = ref·√(m/ref) so mass ratios stay solvable. spawnClearance: m shaved off new bodies so they start clear of the stump. maxPushSpeed: m/s cap on the push a hit gives a falling section. hingeTilt: rad; past this lean the hinge under a toppling section is crushed so it falls free. toppleSpin: rad/s the hit starts a toppling section turning with (the shove at its base). edgeCrushInterval: s between leading-edge failures as a leaning section rolls off its stump. edgeReserveShare: share of a storey's static reserve left against a leaning, moving section (dynamic loading), for the leading-edge test. breakupFraction: a contact carrying this share of a band's crush energy breaks a section into bands of bandStoreys storeys, and bands within chunkRadius m of the contact into storey × bay chunks. pancakeAccretion: share of a crushed storey's mass that rides down with a pancaking section (it keeps v·M/(M + share·m)). pancakeMaxStoreys: per profile. generationDecay / maxGeneration: a falling piece hitting another building damages it at this share of its impact energy, up to this many knock-ons. buildingCooldown: s between knock-ons on one building. impactEnergy: J from which a contact counts as an impact (sound, shake, dust). freezeAfter: s asleep before rubble is frozen in place. debrisLife: s, per profile. debrisBodies / chunkBodies: live-body budgets per profile. debrisPerCrushed: debris bodies per crushed chunk. friction: pieces' friction"
   },
   "punchMass": 60000,
   "dentSpeed": 12,
@@ -27,5 +28,29 @@
   "blowOut": { "minHalfAngle": 0.436, "maxHalfAngle": 1.047, "minSpeed": 40, "maxSpeed": 110, "maxDepthShare": 0.8 },
   "strainRatio": 0.7,
   "offCentreShare": 0.1,
-  "maxCrushPasses": 8
+  "maxCrushPasses": 8,
+  "motion": {
+    "solverMassReference": 50000,
+    "spawnClearance": 0.02,
+    "maxPushSpeed": 12,
+    "hingeTilt": 0.5,
+    "toppleSpin": 0.18,
+    "edgeCrushInterval": 0.05,
+    "edgeReserveShare": 0.75,
+    "breakupFraction": 0.3,
+    "bandStoreys": 4,
+    "chunkRadius": 10,
+    "pancakeAccretion": 0.5,
+    "pancakeMaxStoreys": { "desktop": 40, "phone": 20 },
+    "generationDecay": 0.5,
+    "maxGeneration": 2,
+    "buildingCooldown": 1.5,
+    "impactEnergy": 2000000,
+    "freezeAfter": 1,
+    "debrisLife": { "desktop": 25, "phone": 15 },
+    "debrisBodies": { "desktop": 350, "phone": 100 },
+    "chunkBodies": { "desktop": 260, "phone": 90 },
+    "debrisPerCrushed": 1,
+    "friction": 0.9
+  }
 }

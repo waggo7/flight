@@ -56,6 +56,9 @@ const HIDDEN = new Matrix4().makeScale(0, 0, 0);
 export class FacadeInstances {
   readonly mesh: InstancedMesh;
   readonly capacity: number;
+  /** Pool use (alloc/release): the draw count is the high-water mark; freed slots are reused. */
+  private highWater = 0;
+  private readonly freeSlots: number[] = [];
   private readonly facade: InstancedBufferAttribute;
   private readonly grid: InstancedBufferAttribute;
   private readonly tier: InstancedBufferAttribute;
@@ -98,6 +101,29 @@ export class FacadeInstances {
   /** Move an instance without touching its facade data (bodies moving each frame). */
   setMatrix(index: number, world: Matrix4): void {
     this.mesh.setMatrixAt(index, world);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  /** Take a free slot for `item`; null when the pool is full. */
+  alloc(item: FacadeInstance): number | null {
+    const index = this.freeSlots.pop() ?? (this.highWater < this.capacity ? this.highWater++ : -1);
+    if (index < 0) return null;
+    this.mesh.count = this.highWater;
+    this.set(index, item);
+    return index;
+  }
+
+  release(index: number): void {
+    this.hide(index);
+    this.freeSlots.push(index);
+  }
+
+  /** Empty the pool (Restart). */
+  releaseAll(): void {
+    for (let i = 0; i < this.highWater; i++) this.mesh.setMatrixAt(i, HIDDEN);
+    this.highWater = 0;
+    this.freeSlots.length = 0;
+    this.mesh.count = 0;
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 

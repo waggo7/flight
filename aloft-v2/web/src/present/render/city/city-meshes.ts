@@ -1,5 +1,5 @@
 import { Color, ConeGeometry, DynamicDrawUsage, Group, InstancedMesh, Matrix4, MeshBasicMaterial, SphereGeometry, Vector3, type Material } from 'three';
-import type { BoxPiece, CityBlueprint, RoundPiece } from '../../../core/city-blueprint';
+import type { BoxPiece, CityBlueprint, PieceRef, RoundPiece } from '../../../core/city-blueprint';
 import { boxStoreyLayout, roundStoreyLayout } from '../../../core/storey-layout';
 import { createSpireMaterial, INTACT_EXTERIOR_MASK } from './facade-material';
 import { FacadeInstances, type FacadeInstance } from './facade-instances';
@@ -7,6 +7,8 @@ import { FacadeInstances, type FacadeInstance } from './facade-instances';
 // The intact city: every blueprint piece as an instance (boxes and round towers share the
 // building-space facade; spires and aviation beacons are simple instanced meshes). Keeps a
 // pristine copy of every matrix so Restart can put the skyline back after destruction.
+
+const HIDDEN_MATRIX = new Matrix4().makeScale(0, 0, 0);
 
 export function boxFacadeInstance(piece: BoxPiece): FacadeInstance {
   const layout = boxStoreyLayout(piece);
@@ -39,9 +41,9 @@ export class CityMeshes {
   readonly rounds: FacadeInstances;
   readonly spires: InstancedMesh;
   readonly beacons: InstancedMesh;
-  /** Loose storey × bay chunks of damaged buildings (drawn only up to `chunkCount`). */
-  readonly chunks: FacadeInstances;
-  private chunkCount = 0;
+  /** Pools for pieces of damaged buildings: standing remains, falling sections, chunks, debris. */
+  readonly boxChunks: FacadeInstances;
+  readonly roundChunks: FacadeInstances;
   private readonly beaconMaterial = new MeshBasicMaterial({ color: new Color(8, 0.4, 0.25) });
   private readonly pristine: Map<InstancedMesh, Float32Array>;
 
@@ -77,12 +79,18 @@ export class CityMeshes {
     }
     this.pristine = new Map(meshes.map((mesh) => [mesh, mesh.instanceMatrix.array.slice() as Float32Array]));
 
-    // Same material as the intact boxes, so chunks share their shader program.
-    this.chunks = new FacadeInstances('box', chunkCapacity, this.boxes.mesh.material as Material);
-    this.chunks.mesh.frustumCulled = false; // members move anywhere; the bounding sphere would go stale
-    this.chunks.mesh.count = 0;
-    this.chunks.mesh.name = 'city-chunks';
-    this.group.add(this.chunks.mesh);
+    // Same materials as the intact pieces, so chunks share their shader programs.
+    this.boxChunks = this.createPool('box', chunkCapacity, this.boxes.mesh.material as Material);
+    this.roundChunks = this.createPool('round', Math.ceil(chunkCapacity / 8), this.rounds.mesh.material as Material);
+  }
+
+  private createPool(shape: 'box' | 'round', capacity: number, material: Material): FacadeInstances {
+    const pool = new FacadeInstances(shape, capacity, material);
+    pool.mesh.frustumCulled = false; // members move anywhere; a bounding sphere would go stale
+    pool.mesh.count = 0;
+    pool.mesh.name = `city-${shape}-chunks`;
+    this.group.add(pool.mesh);
+    return pool;
   }
 
   /**
@@ -90,15 +98,39 @@ export class CityMeshes {
    * Returns the chunk instance ids, or null when the pool is full (the piece stays intact).
    */
   replaceWithChunks(boxIndex: number, chunks: readonly FacadeInstance[]): number[] | null {
-    if (this.chunkCount + chunks.length > this.chunks.capacity) return null;
-    const ids = chunks.map((chunk) => {
-      const id = this.chunkCount++;
-      this.chunks.set(id, chunk);
-      return id;
-    });
-    this.chunks.mesh.count = this.chunkCount;
+    const ids: number[] = [];
+    for (const chunk of chunks) {
+      const id = this.boxChunks.alloc(chunk);
+      if (id === null) {
+        for (const taken of ids) this.boxChunks.release(taken);
+        return null;
+      }
+      ids.push(id);
+    }
     this.boxes.hide(boxIndex);
     return ids;
+  }
+
+  /** The instanced mesh and slot that draw an intact piece. */
+  pieceSlot(piece: PieceRef): { mesh: InstancedMesh; index: number } {
+    const mesh = piece.kind === 'box' ? this.boxes.mesh : piece.kind === 'round' ? this.rounds.mesh : piece.kind === 'spire' ? this.spires : this.beacons;
+    return { mesh, index: piece.index };
+  }
+
+  /** The piece's matrix as generated. */
+  pristineMatrix(piece: PieceRef, out: Matrix4): Matrix4 {
+    const { mesh, index } = this.pieceSlot(piece);
+    return out.fromArray(this.pristine.get(mesh)!, index * 16);
+  }
+
+  setPieceMatrix(piece: PieceRef, matrix: Matrix4): void {
+    const { mesh, index } = this.pieceSlot(piece);
+    mesh.setMatrixAt(index, matrix);
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  hidePiece(piece: PieceRef): void {
+    this.setPieceMatrix(piece, HIDDEN_MATRIX);
   }
 
   /** Beacons blink together. */
@@ -113,7 +145,7 @@ export class CityMeshes {
       mesh.instanceMatrix.array.set(matrices);
       mesh.instanceMatrix.needsUpdate = true;
     }
-    this.chunkCount = 0;
-    this.chunks.mesh.count = 0;
+    this.boxChunks.releaseAll();
+    this.roundChunks.releaseAll();
   }
 }

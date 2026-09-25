@@ -1,4 +1,5 @@
 import { DoubleSide, FrontSide, MeshStandardMaterial, Vector4 } from 'three';
+import { FaceBit } from '../../../core/structure-regions';
 import { afterInclude, applyAtmosphere, NOISE_GLSL } from '../world/atmosphere';
 
 // One facade material for everything built: intact pieces, falling bands and loose chunks.
@@ -19,7 +20,8 @@ export const DAMAGE_SLOTS = 16;
 /** Scorch marks from impacts, shared by every facade material (ring buffer of world spheres). */
 export const damageUniform = { value: Array.from({ length: DAMAGE_SLOTS }, () => new Vector4(0, -1e5, 0, 0)) };
 
-export const EXTERIOR = { px: 1, nx: 2, py: 4, ny: 8, pz: 16, nz: 32 } as const;
+/** Exterior-face bits (the convention lives in core so structure regions share it). */
+export const EXTERIOR = FaceBit;
 /** Every face outside except the base (sits on the ground or the piece below). */
 export const INTACT_EXTERIOR_MASK = EXTERIOR.px | EXTERIOR.nx | EXTERIOR.py | EXTERIOR.pz | EXTERIOR.nz;
 

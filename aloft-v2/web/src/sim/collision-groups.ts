@@ -20,9 +20,10 @@ export function collisionGroups(options: { debrisHitsDebris: boolean }) {
   return {
     city: interactionGroups(CITY, ACTOR | CHUNK | DEBRIS | QUERY | HELD),
     ground: interactionGroups(GROUND, ACTOR | CHUNK | DEBRIS | QUERY | HELD),
-    actor: interactionGroups(ACTOR, CITY | GROUND | ACTOR | CHUNK | DEBRIS | QUERY | HELD),
+    // Falling sections ignore small debris: rubble wedged under a section must never prop it up.
+    actor: interactionGroups(ACTOR, CITY | GROUND | ACTOR | CHUNK | QUERY | HELD),
     chunk: interactionGroups(CHUNK, CITY | GROUND | ACTOR | CHUNK | DEBRIS | QUERY | HELD),
-    debris: interactionGroups(DEBRIS, CITY | GROUND | ACTOR | CHUNK | QUERY | (options.debrisHitsDebris ? DEBRIS : 0)),
+    debris: interactionGroups(DEBRIS, CITY | GROUND | CHUNK | QUERY | (options.debrisHitsDebris ? DEBRIS : 0)),
     /** A carried chunk: hits buildings and big pieces, never debris (so it can't fling rubble). */
     held: interactionGroups(HELD, CITY | GROUND | ACTOR | CHUNK),
     /** The hero's sweep: buildings, sections and chunks; small debris never stops the hero. */
