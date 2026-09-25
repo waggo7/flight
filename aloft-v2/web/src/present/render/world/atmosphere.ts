@@ -32,7 +32,8 @@ export const atmosphereUniforms = {
   uTime: { value: 0 },
 };
 
-export const ATMOSPHERE_GLSL = /* glsl */ `
+// ATMOSPHERE_GLSL is assembled from parts so a shader can leave one out without string surgery.
+const ATMOSPHERE_UNIFORMS_GLSL = /* glsl */ `
 uniform vec3 uSunDir;
 uniform vec3 uSunColor;
 uniform vec3 uSkyZenith;
@@ -41,8 +42,12 @@ uniform vec3 uSkyHorizonAway;
 uniform vec3 uSunGlow;
 uniform float uFogDensity;
 uniform float uFogFalloff;
-uniform float uTime;
+`;
 
+const TIME_UNIFORM_GLSL = /* glsl */ `uniform float uTime;
+`;
+
+const ATMOSPHERE_FUNCTIONS_GLSL = /* glsl */ `
 vec3 skyRadiance(vec3 rd) {
   float sunDot = dot(rd, uSunDir);
   float toward = clamp(sunDot * 0.5 + 0.5, 0.0, 1.0);
@@ -73,7 +78,16 @@ vec3 applyAerialPerspective(vec3 color, vec3 worldPos) {
 }
 `;
 
-export const NOISE_GLSL = /* glsl */ `
+export const ATMOSPHERE_GLSL = ATMOSPHERE_UNIFORMS_GLSL + TIME_UNIFORM_GLSL + ATMOSPHERE_FUNCTIONS_GLSL;
+
+/**
+ * ATMOSPHERE_GLSL without `uniform float uTime;`. v1's clouds declare uTime in their vertex stage
+ * and kept it out of the fragment stage; this reproduces that fragment shader.
+ */
+export const ATMOSPHERE_GLSL_WITHOUT_TIME = ATMOSPHERE_UNIFORMS_GLSL + ATMOSPHERE_FUNCTIONS_GLSL;
+
+/** hash12 and valueNoise: NOISE_GLSL without fbm (v1's dust shader uses only these). */
+export const VALUE_NOISE_GLSL = /* glsl */ `
 float hash12(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
@@ -86,7 +100,9 @@ float valueNoise(vec2 p) {
   return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), u.x),
              mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), u.x), u.y);
 }
-float fbm(vec2 p) {
+`;
+
+const FBM_GLSL = /* glsl */ `float fbm(vec2 p) {
   float sum = 0.0;
   float amp = 0.5;
   for (int i = 0; i < 5; i++) {
@@ -97,6 +113,8 @@ float fbm(vec2 p) {
   return sum;
 }
 `;
+
+export const NOISE_GLSL = VALUE_NOISE_GLSL + FBM_GLSL;
 
 /**
  * Every three.js shader chunk this project patches. tests/unit/shader-anchors.test.ts checks
