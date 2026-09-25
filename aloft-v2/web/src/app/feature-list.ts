@@ -5,6 +5,7 @@ import { cameraFeature } from '../features/camera-feature';
 import { cityFeature } from '../features/city-feature';
 import { collapseAudioFeature } from '../features/collapse-audio-feature';
 import { controlsFeature } from '../features/controls-feature';
+import { demoScenesFeature } from '../features/demo-scenes-feature';
 import { destructionFeature } from '../features/destruction-feature';
 import { devOverlayFeature } from '../features/dev-overlay-feature';
 import { effectsFeature } from '../features/effects-feature';
@@ -44,6 +45,7 @@ export function createFeatureList(loop: () => GameLoop): Feature[] {
     collapseAudioFeature,
     powersFeature,
     gameFlowFeature,
+    demoScenesFeature,
     flightHudFeature,
     devOverlayFeature,
     createTestApiFeature(loop),

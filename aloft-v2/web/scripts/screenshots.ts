@@ -134,6 +134,17 @@ async function runViewport(url: string, viewport: Viewport): Promise<void> {
         await advance(page, 150, { brake: true });
         await shot('slam-aftermath');
       }
+      // Demo scenes (desktop only, to keep the run short): each must stage and leave the world sane.
+      if (viewport === 'desktop') {
+        for (const [name, frames] of [['topple', 540], ['pancake', 420], ['domino', 600], ['slam', 420], ['throw', 780]] as const) {
+          const staged = await page.evaluate((n) => window.__aloft!.scene(n), name);
+          expect(staged, `${viewport}: the ${name} scene should find a site in the city`);
+          for (let done = 0; done < frames; done += 120) await advance(page, Math.min(120, frames - done), null);
+          await shot(`scene-${name}`);
+          const after = await page.evaluate(() => window.__aloft!.destruction);
+          expect(after.fragments > 0, `${viewport}: the ${name} scene should break something (fragments ${after.fragments})`);
+        }
+      }
       const later = await page.evaluate(() => window.__aloft!.snapshot);
       expect(Number.isFinite((later.position as number[])[1]!), `${viewport}: hero position should stay finite`);
     }

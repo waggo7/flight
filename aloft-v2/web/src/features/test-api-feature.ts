@@ -7,6 +7,7 @@ import { splitBoxIntoChunks } from '../present/render/city/chunk-instances';
 import { CameraToken } from './camera-feature';
 import { CityToken } from './city-feature';
 import { ControlsToken } from './controls-feature';
+import { DemoScenesToken, type ScenarioName } from './demo-scenes-feature';
 import { DestructionToken } from './destruction-feature';
 import { EffectsToken } from './effects-feature';
 import { PowersToken } from './powers-feature';
@@ -40,6 +41,8 @@ export interface TestApi {
   aimAtTower(speed: number, distance?: number): { building: number; yaw: number; point: [number, number, number] } | null;
   /** Hover `distance` m to the side of `point` (looking across `yaw`), facing it. */
   watch(point: [number, number, number], yaw: number, distance?: number): void;
+  /** Stage a demo scene (topple, pancake, domino, slam, throw); false if the city has no site for it. */
+  scene(name: ScenarioName): boolean;
   /** Press a power's button. */
   power(name: 'slam' | 'grab'): void;
   /** Offline renders of the collapse recipes, with measurements and WAVs (npm run audio:render). */
@@ -73,6 +76,7 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
       const destruction = ctx.services.require(DestructionToken);
       const effects = ctx.services.require(EffectsToken);
       const powers = ctx.services.require(PowersToken);
+      const scenes = ctx.services.require(DemoScenesToken);
       window.__aloft = {
         start: () => flow.start(),
         restart: () => flow.restart(),
@@ -118,6 +122,7 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
           rig.snapTo(flight.view);
         },
         audioBench: () => runAudioBench(),
+        scene: (name) => scenes.play(name),
         power(name) {
           if (name === 'slam') powers.pressSlam();
           else powers.pressGrab();
