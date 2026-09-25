@@ -6,6 +6,7 @@ extends SceneTree
 
 const FlightModel := preload("res://core/flight_model.gd")
 const BoxWorld := preload("res://tests/conformance_box_world.gd")
+const HeroPoseGraph := preload("res://core/hero_pose_graph.gd")
 
 var failures := 0
 var checks := 0
@@ -14,6 +15,7 @@ var checks := 0
 func _init() -> void:
 	var started := Time.get_ticks_msec()
 	_run_flight("res://shared/conformance/flight-model.json")
+	_run_pose_graph("res://shared/conformance/hero-pose-graph.json")
 	var elapsed := Time.get_ticks_msec() - started
 	if checks == 0:
 		failures += 1
@@ -114,3 +116,47 @@ func _run_flight(path: String) -> void:
 					_expect(_close(got[key][axis], want[key][axis], tolerance), "%s step %d: %s[%d] = %.9f, expected %.9f" % [name, got["step"], key, axis, got[key][axis], want[key][axis]])
 			_expect(got["mode"] == want["mode"], "%s step %d: mode %s, expected %s" % [name, got["step"], got["mode"], want["mode"]])
 			_expect(got["overWater"] == want["overWater"], "%s step %d: overWater mismatch" % [name, got["step"]])
+
+
+func _run_pose_graph(path: String) -> void:
+	var data = _load_json(path)
+	if data == null:
+		return
+	var tolerance: Dictionary = data["tolerance"]
+	var dt: float = data["dt"]
+	var every := int(data["sampleEvery"])
+	_expect(data["joints"] == HeroPoseGraph.JOINTS, "hero-pose-graph: joint order differs from the port")
+	_expect(data["poses"] == HeroPoseGraph.POSES, "hero-pose-graph: pose order differs from the port")
+	for case in data["cases"]:
+		var graph = HeroPoseGraph.new(data["library"])
+		var segments: Array = case["segments"]
+		if case["snap"]:
+			graph.snap(segments[0]["input"])
+		var samples: Array = []
+		var step := 0
+		for segment in segments:
+			if segment.has("force"):
+				graph.force(segment["force"])
+			if segment.has("event"):
+				graph.trigger(segment["event"])
+			var segment_dt: float = segment.get("dt", dt)
+			for i in int(segment["steps"]):
+				graph.update(segment_dt, segment["input"])
+				step += 1
+				if step % every == 0:
+					samples.append({
+						"step": step, "weights": graph.weights.duplicate(), "rotations": graph.rotations.duplicate(),
+						"offset": graph.offset.duplicate(), "look": graph.look.duplicate(),
+					})
+		var name: String = case["name"]
+		var expected_samples: Array = case["samples"]
+		_expect(samples.size() == expected_samples.size(), "%s: %d samples, expected %d" % [name, samples.size(), expected_samples.size()])
+		for i in mini(samples.size(), expected_samples.size()):
+			var want: Dictionary = expected_samples[i]
+			var got: Dictionary = samples[i]
+			for key in ["weights", "rotations", "offset", "look"]:
+				var wanted: Array = want[key]
+				var actual: Array = got[key]
+				_expect(actual.size() == wanted.size(), "%s step %d: %s has %d values, expected %d" % [name, got["step"], key, actual.size(), wanted.size()])
+				for n in mini(actual.size(), wanted.size()):
+					_expect(_close(actual[n], wanted[n], tolerance), "%s step %d: %s[%d] = %.12f, expected %.12f" % [name, got["step"], key, n, actual[n], wanted[n]])

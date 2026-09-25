@@ -1,0 +1,132 @@
+/* The hero select above "Take flight" (hero-picker.ts). Uses hud-styles.css's tokens. */
+
+.title-action {
+  display: grid;
+  justify-items: center;
+  gap: clamp(0.9rem, 2.4vh, 1.4rem);
+}
+
+.hero-picker {
+  display: grid;
+  grid-template-columns: auto minmax(11rem, auto) auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hero-picker-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  min-width: 11rem;
+}
+
+.hero-picker-name {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.55rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-shadow: var(--text-shadow);
+}
+
+.hero-picker-swatch {
+  display: inline-flex;
+}
+
+.hero-picker-swatch i {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  margin-left: -0.18rem;
+  box-shadow: 0 0 0 1.5px rgb(255 246 234 / 0.85), 0 1px 4px rgb(24 16 36 / 0.4);
+}
+
+.hero-picker-swatch i:first-child {
+  margin-left: 0;
+}
+
+.hero-picker-tagline {
+  margin: 0;
+  font: 700 0.62rem/1 var(--font-ui);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-shadow: var(--text-shadow);
+}
+
+.hero-picker-dots {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.hero-picker-dots span {
+  width: 0.36rem;
+  height: 0.36rem;
+  border-radius: 50%;
+  background: var(--ink-ghost);
+  transition: background 240ms var(--ease-out), transform 240ms var(--ease-out);
+}
+
+.hero-picker-dots span.is-current {
+  background: var(--ink);
+  transform: scale(1.2);
+}
+
+.hero-picker-arrow {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid rgb(255 246 234 / 0.34);
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--ink);
+  background: rgb(36 26 56 / 0.22);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: transform 240ms var(--ease-out), border-color 240ms var(--ease-out), background 240ms var(--ease-out);
+}
+
+.hero-picker-arrow svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hero-picker-arrow:hover {
+  border-color: var(--gold);
+  background: rgb(36 26 56 / 0.36);
+  transform: scale(1.06);
+}
+
+.hero-picker-arrow:active {
+  transform: scale(0.96);
+}
+
+.hero-picker-arrow:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .hero-picker-name {
+    font-size: 1.35rem;
+  }
+
+  .hero-picker-card {
+    min-width: 9.5rem;
+  }
+}

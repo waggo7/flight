@@ -4,9 +4,17 @@ import actionsJson from '@content/input/actions.json';
 import inputJson from '@content/tuning/input.json';
 import simulationJson from '@content/tuning/simulation.json';
 import destructionJson from '@content/tuning/destruction.json';
+import posesJson from '@content/heroes/poses.json';
+import auroraJson from '@content/heroes/aurora.json';
+import bastionJson from '@content/heroes/bastion.json';
+import swiftJson from '@content/heroes/swift.json';
 import type { DestructionTuning } from '../core/destruction-tuning';
 import type { CameraTuning, FlightTuning, InputBindings, InputTuning, SimulationTuning } from '../core/flight-tuning';
-import { arr, bool, int, num, obj, optional, str, validated, type Rule, type Shape } from './content-validation';
+import { HERO_EMBLEMS, HERO_HAIR_STYLES, HERO_MASKS, HERO_POWERS, type HeroDefinition } from '../core/hero-definition';
+import {
+  GRAB_PHASES, HERO_HAND_SHAPES, HERO_POSE_JOINTS, HERO_POSE_NAMES, SLAM_PHASES, type HeroPoseLibrary,
+} from '../core/hero-pose-graph';
+import { arr, bool, ContentError, hexColour, int, num, obj, optional, str, validated, type Rule, type Shape } from './content-validation';
 
 // All engine-neutral content (aloft-v2/content/*.json), validated once at boot. The Godot
 // scaffold loads the same files.
@@ -74,8 +82,72 @@ export const ACTIONS_SHAPE: Shape = {
   presses: obj({
     pause: binding, 'toggle-view': binding, 'toggle-sound': binding, restart: binding,
     'toggle-keys': binding, 'toggle-dev': binding, confirm: binding,
+    'hero-previous': binding, 'hero-next': binding,
   }),
 };
+
+export const HERO_SHAPE: Shape = {
+  id: str(), name: str(), tagline: str(),
+  look: obj({
+    palette: obj({ suit: hexColour(), trim: hexColour(), accent: hexColour(), cape: hexColour(), skin: hexColour(), hair: hexColour() }),
+    build: obj({ height: num(1.7, 2.1), shoulders: num(0.8, 1.3), bulk: num(0.75, 1.4) }),
+    cape: optional(obj({ length: num(0.5, 2.2), width: num(0.4, 1.6) })),
+    emblem: str(HERO_EMBLEMS), mask: str(HERO_MASKS), hair: str(HERO_HAIR_STYLES),
+  }),
+  flight: obj({ speed: num(0.5, 1.5), acceleration: num(0.5, 1.6), turnRate: num(0.5, 1.5) }),
+  powers: obj({ loadout: arr(str(HERO_POWERS), 0, HERO_POWERS.length), slamRadiusScale: num(0.5, 2), throwSpeedScale: num(0.5, 2), grabMassScale: num(0.25, 4) }),
+};
+
+const angles: Rule = arr(num(-3.3, 3.3), 3, 3);
+const actionPose: Rule = optional(obj({ pose: str(HERO_POSE_NAMES), weight: num(0, 1) }));
+const eventPulse: Rule = obj({ duration: num(0.05, 5), rise: num(0.01, 1), hold: num(0, 1) });
+
+export const POSES_SHAPE: Shape = {
+  hands: obj(Object.fromEntries(HERO_HAND_SHAPES.map((name) => [name, obj({ fingers: angles, thumb: angles })]))),
+  poses: obj(Object.fromEntries(HERO_POSE_NAMES.map((name) => [name, obj({
+    full: bool(),
+    joints: obj(Object.fromEntries(HERO_POSE_JOINTS.map((joint) => [joint, optional(angles)]))),
+    offset: optional(arr(num(-1.5, 1.5), 3, 3)),
+    handL: optional(str(HERO_HAND_SHAPES)),
+    handR: optional(str(HERO_HAND_SHAPES)),
+  })]))),
+  graph: obj({
+    springs: obj({ dampingRatio: num(0.5, 1), core: num(1, 60), limb: num(1, 60), hand: num(1, 80), head: num(1, 60), offset: num(1, 60), look: num(1, 60) }),
+    dive: obj({ start: num(0, 1.5), full: num(0.05, 1.6) }),
+    events: obj({ burst: eventPulse, glance: eventPulse }),
+    layers: obj({
+      bankLean: num(0, 1.5), bankHips: num(0, 1), steerDrift: num(0, 1), breathRate: num(0, 20), breathDepth: num(0, 0.3), idleSway: num(0, 0.5),
+      flutterRate: num(0, 60), flutterDepth: num(0, 0.3), bobRate: num(0, 20), bobHeight: num(0, 0.3),
+    }),
+    look: obj({ maxYaw: num(0, 2), maxPitch: num(0, 1.5), neckShare: num(0, 1), turnLead: num(0, 2) }),
+    actions: obj({
+      slam: obj(Object.fromEntries(SLAM_PHASES.map((phase) => [phase, actionPose]))),
+      grab: obj(Object.fromEntries(GRAB_PHASES.map((phase) => [phase, actionPose]))),
+    }),
+  }),
+};
+
+/**
+ * Every hero preset, in hero-select order. Adding a hero = one JSON file in content/heroes/ plus
+ * its line here (an explicit list, so plain Node scripts and the Godot port read the same set).
+ */
+const HERO_FILES: readonly (readonly [id: string, json: unknown])[] = [
+  ['aurora', auroraJson],
+  ['bastion', bastionJson],
+  ['swift', swiftJson],
+];
+
+/** Validate hero files: each against HERO_SHAPE, its id matching its file name, ids unique. */
+export function loadHeroes(files: readonly (readonly [id: string, json: unknown])[] = HERO_FILES): HeroDefinition[] {
+  const heroes = files.map(([id, json]) => {
+    const path = `content/heroes/${id}.json`;
+    const hero = validated<HeroDefinition>(json, HERO_SHAPE, path);
+    if (hero.id !== id) throw new ContentError(`${path}.id: "${hero.id}" should match the file name "${id}"`);
+    return { ...hero, look: { ...hero.look, cape: hero.look.cape ?? null } };
+  });
+  if (heroes.length === 0) throw new ContentError('content/heroes: at least one hero is needed');
+  return heroes;
+}
 
 export interface ContentLibrary {
   flight: FlightTuning;
@@ -84,6 +156,14 @@ export interface ContentLibrary {
   simulation: SimulationTuning;
   actions: InputBindings;
   destruction: DestructionTuning;
+  /** Hero presets in hero-select order; the first is the default. */
+  heroes: HeroDefinition[];
+  poses: HeroPoseLibrary;
+}
+
+/** The hero with this id, or the first (default) hero. */
+export function findHero(content: Pick<ContentLibrary, 'heroes'>, id: string | null | undefined): HeroDefinition {
+  return content.heroes.find((hero) => hero.id === id) ?? content.heroes[0]!;
 }
 
 export function loadContent(): ContentLibrary {
@@ -94,5 +174,7 @@ export function loadContent(): ContentLibrary {
     simulation: validated<SimulationTuning>(simulationJson, SIMULATION_SHAPE, 'content/tuning/simulation.json'),
     actions: validated<InputBindings>(actionsJson, ACTIONS_SHAPE, 'content/input/actions.json'),
     destruction: validated<DestructionTuning>(destructionJson, DESTRUCTION_SHAPE, 'content/tuning/destruction.json'),
+    heroes: loadHeroes(),
+    poses: validated<HeroPoseLibrary>(posesJson, POSES_SHAPE, 'content/heroes/poses.json'),
   };
 }

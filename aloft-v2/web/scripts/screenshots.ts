@@ -25,6 +25,66 @@ async function advance(page: Page, frames: number, controls: Controls): Promise<
 
 const snapshot = (page: Page): Promise<Record<string, unknown>> => page.evaluate(() => window.__aloft!.snapshot);
 
+const HEROES = ['aurora', 'bastion', 'swift'] as const;
+/** The stills: a pose and the flight state it is shown in. */
+const STILLS = [
+  { pose: null, name: 'hover', hover: true, pitch: 0, speed: 0 },
+  { pose: 'cruise', name: 'cruise', hover: false, pitch: 0, speed: 34 },
+  { pose: 'boost', name: 'boost', hover: false, pitch: 0, speed: 108 },
+  { pose: 'dive', name: 'dive', hover: false, pitch: -0.9, speed: 70 },
+  { pose: 'brake', name: 'brake', hover: false, pitch: 0.1, speed: 30 },
+  { pose: 'burst', name: 'burst', hover: false, pitch: 0, speed: 90 },
+  { pose: 'slamLand', name: 'slamLand', hover: true, pitch: 0, speed: 0 },
+  { pose: 'hold', name: 'hold', hover: true, pitch: 0, speed: 0 },
+] as const;
+
+/**
+ * Each hero × each still, framed close up in one camera pose; writes one PNG per still and a
+ * contact sheet per viewport. Returns the hero stats (draw calls, triangles, rig ms).
+ */
+async function heroStills(page: Page, viewport: Viewport): Promise<void> {
+  const result = await page.evaluate(([heroes, stills]) => {
+    const api = window.__aloft!;
+    const canvas = document.querySelector('canvas')!;
+    const portrait = canvas.height > canvas.width;
+    const cellW = portrait ? 180 : 240;
+    const cellH = portrait ? 260 : 240;
+    const sheet = document.createElement('canvas');
+    sheet.width = cellW * stills.length;
+    sheet.height = cellH * heroes.length;
+    const context = sheet.getContext('2d')!;
+    const crops: Record<string, string> = {};
+    const stats = [];
+    for (const [row, id] of heroes.entries()) {
+      api.setHero(id);
+      stats.push(api.heroStats());
+      for (const [column, still] of stills.entries()) {
+        api.forcePose(still.pose);
+        api.placeHero({ position: [-60, 190, -980], yaw: 0.09, pitch: still.pitch, speed: still.speed, hover: still.hover });
+        api.advance(45, 1 / 60, false);
+        api.frameHero({ azimuth: 0.75, elevation: 0.14, fill: 0.86 });
+        crops[`${id}-${still.name}`] = canvas.toDataURL('image/png');
+        // Contact sheet cell: the middle of the frame, scaled down.
+        const sourceH = canvas.height * 0.94;
+        const sourceW = Math.min(canvas.width, (sourceH * cellW) / cellH);
+        context.drawImage(canvas, (canvas.width - sourceW) / 2, (canvas.height - sourceH) / 2, sourceW, sourceH, column * cellW, row * cellH, cellW, cellH);
+      }
+    }
+    api.forcePose(null);
+    api.setHero(heroes[0]!);
+    api.placeHero({ position: [-60, 190, -980], yaw: 0.09, hover: true });
+    return { crops, sheet: sheet.toDataURL('image/png'), stats };
+  }, [HEROES, STILLS] as const);
+  for (const [name, data] of Object.entries(result.crops)) writeFileSync(`${OUT}/${viewport}-hero-${name}.png`, Buffer.from(data.split(',')[1]!, 'base64'));
+  writeFileSync(`${OUT}/${viewport}-heroes-sheet.png`, Buffer.from(result.sheet.split(',')[1]!, 'base64'));
+  for (const stats of result.stats) {
+    console.log(`${viewport}: hero ${stats.hero} — ${stats.drawCalls} draw calls, ${stats.triangles} triangles, ${stats.bones} bones, rig update ${stats.rigMs.toFixed(3)} ms`);
+    expect(stats.drawCalls <= 4, `${viewport}: hero ${stats.hero} draws in ${stats.drawCalls} calls (max 4)`);
+    expect(stats.triangles <= 30_000, `${viewport}: hero ${stats.hero} has ${stats.triangles} triangles (max 30k)`);
+    expect(stats.rigMs < 0.2, `${viewport}: hero ${stats.hero} rig update takes ${stats.rigMs.toFixed(3)} ms (max 0.2)`);
+  }
+}
+
 async function runViewport(url: string, viewport: Viewport): Promise<void> {
   const { browser, page, errors } = await openPage(`${url}?test`, viewport);
   const shot = (name: string): Promise<Buffer> => page.screenshot({ path: `${OUT}/${viewport}-${name}.png`, timeout: 180_000 });
@@ -34,6 +94,19 @@ async function runViewport(url: string, viewport: Viewport): Promise<void> {
     await advance(page, 30, null);
     await shot('title');
     expect((await snapshot(page)).state === 'title', `${viewport}: should boot to the title`);
+
+    // Hero select: → cycles to the next preset (saved in settings), ← back.
+    await page.keyboard.press('ArrowRight');
+    expect((await page.evaluate(() => window.__aloft!.hero)) === 'bastion', `${viewport}: → on the title should pick the next hero`);
+    await advance(page, 20, null);
+    await shot('title-bastion');
+    await page.keyboard.press('ArrowLeft');
+    expect((await page.evaluate(() => window.__aloft!.hero)) === 'aurora', `${viewport}: ← should go back`);
+
+    const started = Date.now();
+    await heroStills(page, viewport);
+    console.log(`${viewport}: hero stills in ${((Date.now() - started) / 1000).toFixed(1)} s`);
+    await advance(page, 10, null);
 
     await page.evaluate(() => window.__aloft!.start());
     await advance(page, 120, {});

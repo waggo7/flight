@@ -1,4 +1,5 @@
-import { Vector3 } from 'three';
+import { Box3, Scene, Vector3, WebGLRenderTarget } from 'three';
+import type { HeroPoseName } from '../core/hero-pose-graph';
 import type { FlightControls } from '../core/flight-model';
 import type { Feature } from '../engine/game-context';
 import type { GameLoop } from '../engine/game-loop';
@@ -11,7 +12,9 @@ import { DestructionToken } from './destruction-feature';
 import { EffectsToken } from './effects-feature';
 import { FlightToken } from './flight-feature';
 import { GameFlowToken } from './game-flow-feature';
+import { HeroToken } from './hero-feature';
 import { SceneToken } from './scene-feature';
+import { SettingsToken } from './settings-feature';
 
 // ?test: the render loop does not run on its own. Headless checks drive it deterministically:
 //   __aloft.start(); __aloft.setControls({ boost: true }); __aloft.advance(120);
@@ -28,7 +31,8 @@ export interface TestApi {
   start(): void;
   restart(): void;
   setControls(controls: Partial<FlightControls> | null): void;
-  advance(frames?: number, dt?: number): void;
+  /** Run `frames` frames; only the last is drawn (none when `draw` is false). */
+  advance(frames?: number, dt?: number, draw?: boolean): void;
   /** Place the hero mid-flight and snap the camera behind it. */
   pose(pose: TestPose): void;
   render(): void;
@@ -48,6 +52,32 @@ export interface TestApi {
   chunkify(x: number, z: number, radius: number): number;
   readonly state: string;
   readonly snapshot: Record<string, unknown>;
+  /** Choose a hero by id (as the hero select does: saved in settings, rig rebuilt). */
+  setHero(id: string): void;
+  readonly hero: string;
+  /** Hold one pose-library pose at full weight; null returns to the pose graph. */
+  forcePose(name: HeroPoseName | null): void;
+  /** Put the hero somewhere, hovering or mid-flight (the flight model stays paused on the title). */
+  placeHero(place: TestPose & { hover?: boolean }): void;
+  /** Snap the pose springs to their targets and re-drape the cape. */
+  settleHero(): void;
+  /**
+   * Point the camera at the hero and draw: `azimuth` around the hero from its front (radians,
+   * positive toward its left), `elevation` up from level, `fill` = share of the view the figure fills,
+   * `lift` = metres to move the framing centre up (close-ups of the head or boots).
+   */
+  frameHero(options?: { azimuth?: number; elevation?: number; fill?: number; lift?: number }): void;
+  /** The hero drawn alone: draw calls and triangles from renderer.info, and the rig update time. */
+  heroStats(): HeroStats;
+}
+
+export interface HeroStats {
+  hero: string;
+  drawCalls: number;
+  triangles: number;
+  meshes: number;
+  bones: number;
+  rigMs: number;
 }
 
 declare global {
@@ -69,15 +99,22 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
       const city = ctx.services.require(CityToken);
       const destruction = ctx.services.require(DestructionToken);
       const effects = ctx.services.require(EffectsToken);
+      const hero = ctx.services.require(HeroToken);
+      const settings = ctx.services.require(SettingsToken);
+      const bounds = new Box3();
+      const bonePoint = new Vector3();
+      const centre = new Vector3();
+      const size = new Vector3();
+      const direction = new Vector3();
       window.__aloft = {
         start: () => flow.start(),
         restart: () => flow.restart(),
         setControls(next) {
           controls.override = next ? { steerX: 0, steerY: 0, boost: false, brake: false, ...next } : null;
         },
-        advance(frames = 1, dt = 1 / 60) {
+        advance(frames = 1, dt = 1 / 60, draw = true) {
           for (let i = 0; i < frames; i++) {
-            scene.renderEnabled = i === frames - 1;
+            scene.renderEnabled = draw && i === frames - 1;
             loop().frame(dt);
           }
           scene.renderEnabled = true;
@@ -131,6 +168,70 @@ export function createTestApiFeature(loop: () => GameLoop): Feature {
         },
         get state() {
           return flow.state;
+        },
+        setHero(id) {
+          settings.update({ hero: id });
+        },
+        get hero() {
+          return hero.definition.id;
+        },
+        forcePose(name) {
+          hero.forcePose(name);
+        },
+        placeHero({ position, yaw, pitch = 0, speed = 0, hover = false }) {
+          if (hover) flight.respawn(new Vector3(...position), yaw);
+          else flight.place(new Vector3(...position), yaw, pitch, speed);
+          rig.snapTo(flight.view);
+          hero.settle();
+        },
+        settleHero() {
+          hero.settle();
+        },
+        frameHero({ azimuth = 0.7, elevation = 0.12, fill = 0.8, lift = 0 } = {}) {
+          const { camera } = scene;
+          bounds.makeEmpty();
+          for (const bone of hero.rig.boneList) bounds.expandByPoint(bone.getWorldPosition(bonePoint));
+          bounds.getCenter(centre);
+          centre.y += lift;
+          const radius = bounds.getSize(size).length() / 2 + 0.3 * hero.rig.scale;
+          camera.fov = 30;
+          camera.updateProjectionMatrix();
+          const halfV = (camera.fov * Math.PI) / 360;
+          const halfH = Math.atan(Math.tan(halfV) * camera.aspect);
+          const distance = radius / Math.sin(Math.min(halfV, halfH)) / fill;
+          const forward = flight.view.forward;
+          const heading = Math.atan2(forward.x, forward.z) + azimuth;
+          direction.set(Math.sin(heading) * Math.cos(elevation), Math.sin(elevation), Math.cos(heading) * Math.cos(elevation));
+          camera.position.copy(centre).addScaledVector(direction, distance);
+          camera.up.set(0, 1, 0);
+          camera.lookAt(centre);
+          camera.updateMatrixWorld();
+          scene.draw();
+        },
+        heroStats() {
+          const { renderer, camera } = scene;
+          const alone = new Scene();
+          const target = new WebGLRenderTarget(64, 64);
+          const objects = [hero.rig.root, ...(hero.capeMesh ? [hero.capeMesh] : [])];
+          const parents = objects.map((object) => object.parent);
+          for (const object of objects) alone.add(object);
+          const previous = renderer.getRenderTarget();
+          renderer.setRenderTarget(target);
+          renderer.info.reset();
+          renderer.render(alone, camera);
+          const drawCalls = renderer.info.render.calls;
+          const triangles = renderer.info.render.triangles;
+          renderer.setRenderTarget(previous);
+          objects.forEach((object, i) => parents[i]?.add(object));
+          target.dispose();
+          return {
+            hero: hero.definition.id,
+            drawCalls,
+            triangles,
+            meshes: objects.length - 1 + hero.rig.meshes.length,
+            bones: hero.rig.boneList.length,
+            rigMs: hero.measureUpdateMs(300),
+          };
         },
         get snapshot() {
           const m = flight.model;

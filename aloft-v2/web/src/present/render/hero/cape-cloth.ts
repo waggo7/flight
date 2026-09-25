@@ -18,7 +18,7 @@ export interface CapeClothOptions {
   length?: number;
 }
 
-/** A capsule the cloth can't pass through, relative to the hero root (HeroFigure.capsule fits). */
+/** A capsule the cloth can't pass through, relative to the hero root (HeroRig.capsule fits). */
 export interface ClothCapsule {
   readonly a: Vector3Like;
   readonly b: Vector3Like;
@@ -178,6 +178,22 @@ export class CapeCloth {
       }
     }
     this.refreshGeometry();
+  }
+
+  /**
+   * Kick the free cloth (slam impacts, bursting through a building): adds `impulse` (m/s, world
+   * space) to every point below the shoulders, strongest at the hem, with a little ripple across.
+   */
+  kick(impulse: Vector3Like, ripple = 0.35): void {
+    const { cols, rows, vel } = this;
+    for (let i = cols; i < this.count; i++) {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      const reach = Math.pow(row / (rows - 1), 0.7) * (1 + ripple * Math.sin(col * 1.7 + row * 0.9));
+      vel[i * 3] += impulse.x * reach;
+      vel[i * 3 + 1] += impulse.y * reach;
+      vel[i * 3 + 2] += impulse.z * reach;
+    }
   }
 
   /**

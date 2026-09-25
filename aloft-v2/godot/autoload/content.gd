@@ -6,12 +6,23 @@ const ROOT := "res://shared/content/"
 
 var tuning := {}
 var input_actions := {}
+## Hero presets by id (content/heroes/<id>.json) and the shared pose library.
+var heroes := {}
+var poses := {}
 
 
 func _ready() -> void:
 	for name in ["flight", "camera", "input", "simulation", "destruction"]:
 		tuning[name] = _read(ROOT + "tuning/%s.json" % name)
 	input_actions = _read(ROOT + "input/actions.json")
+	poses = _read(ROOT + "heroes/poses.json")
+	var folder := DirAccess.open(ROOT + "heroes")
+	if folder != null:
+		for file in folder.get_files():
+			if file.ends_with(".json") and file != "poses.json":
+				var hero := _read(ROOT + "heroes/" + file)
+				if hero.has("id"):
+					heroes[hero["id"]] = hero
 
 
 func _read(path: String) -> Dictionary:

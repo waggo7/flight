@@ -5,7 +5,7 @@ export type Rule =
   | { kind: 'number'; min: number; max: number }
   | { kind: 'integer'; min: number; max: number }
   | { kind: 'boolean' }
-  | { kind: 'string'; oneOf?: readonly string[] }
+  | { kind: 'string'; oneOf?: readonly string[]; pattern?: RegExp }
   | { kind: 'object'; shape: Shape }
   | { kind: 'array'; item: Rule; minLength: number; maxLength: number }
   | { kind: 'optional'; rule: Rule };
@@ -15,6 +15,8 @@ export const num = (min: number, max: number): Rule => ({ kind: 'number', min, m
 export const int = (min: number, max: number): Rule => ({ kind: 'integer', min, max });
 export const bool = (): Rule => ({ kind: 'boolean' });
 export const str = (oneOf?: readonly string[]): Rule => (oneOf ? { kind: 'string', oneOf } : { kind: 'string' });
+/** An sRGB hex colour, "#rrggbb". */
+export const hexColour = (): Rule => ({ kind: 'string', pattern: /^#[0-9a-fA-F]{6}$/ });
 export const obj = (shape: Shape): Rule => ({ kind: 'object', shape });
 export const arr = (item: Rule, minLength = 0, maxLength = Number.MAX_SAFE_INTEGER): Rule => ({ kind: 'array', item, minLength, maxLength });
 export const optional = (rule: Rule): Rule => ({ kind: 'optional', rule });
@@ -42,6 +44,7 @@ export function check(value: unknown, rule: Rule, path: string): void {
     case 'string':
       if (typeof value !== 'string') fail(path, `expected a string, got ${JSON.stringify(value)}`);
       if (rule.oneOf && !rule.oneOf.includes(value)) fail(path, `"${value}" is not one of ${rule.oneOf.join(', ')}`);
+      if (rule.pattern && !rule.pattern.test(value)) fail(path, `"${value}" does not match ${rule.pattern}`);
       return;
     case 'array':
       if (!Array.isArray(value)) fail(path, 'expected an array');

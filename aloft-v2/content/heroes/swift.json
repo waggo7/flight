@@ -1,0 +1,18 @@
+{
+  "$notes": {
+    "about": "A light, fast hero: navy and yellow, a short cape, a softer slam. Field meanings are in aurora.json's $notes."
+  },
+  "id": "swift",
+  "name": "Swift",
+  "tagline": "Light · speed ×1.15",
+  "look": {
+    "palette": { "suit": "#1f2f66", "trim": "#f2c230", "accent": "#ffe27a", "cape": "#e9b22c", "skin": "#f0c2a0", "hair": "#b5652a" },
+    "build": { "height": 1.76, "shoulders": 0.95, "bulk": 0.85 },
+    "cape": { "length": 0.95, "width": 0.8 },
+    "emblem": "bolt",
+    "mask": "domino",
+    "hair": "long"
+  },
+  "flight": { "speed": 1.15, "acceleration": 1.2, "turnRate": 1.12 },
+  "powers": { "loadout": ["slam", "grab"], "slamRadiusScale": 0.8, "throwSpeedScale": 1.15, "grabMassScale": 0.8 }
+}

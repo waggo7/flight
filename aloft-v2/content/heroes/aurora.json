@@ -1,0 +1,26 @@
+{
+  "$notes": {
+    "about": "A hero preset (content/heroes/<id>.json, listed in web/src/engine/content-library.ts HERO_FILES; the Godot Content autoload reads the folder). Colours are sRGB hex.",
+    "look.palette": "suit = body, trim = gloves, boots, belt and mask, accent = emblem and metal details, cape, skin, hair",
+    "look.build": "height in metres (1.7-2.1); shoulders and bulk are multipliers on the reference hero (1 = v1's hero)",
+    "look.cape": "length and hem width in metres, or null for no cape (the cloth sim is skipped)",
+    "look.emblem": "diamond | star | bolt | ring",
+    "look.mask": "none | domino | cowl",
+    "look.hair": "swept | crop | long | none",
+    "flight": "multipliers on content/tuning/flight.json: speed (cruise, boost, launch, minimum, dive bonus), acceleration (cruise, boost), turnRate (yaw rates)",
+    "powers": "loadout = the powers this hero carries; the scales multiply the power tuning for slam radius, throw speed and the heaviest thing the hero can grab"
+  },
+  "id": "aurora",
+  "name": "Aurora",
+  "tagline": "Balanced · the classic",
+  "look": {
+    "palette": { "suit": "#ebe5da", "trim": "#2a2e38", "accent": "#e8b658", "cape": "#a3121c", "skin": "#d69c7a", "hair": "#221612" },
+    "build": { "height": 1.86, "shoulders": 1.1, "bulk": 1.05 },
+    "cape": { "length": 1.5, "width": 1.08 },
+    "emblem": "diamond",
+    "mask": "none",
+    "hair": "swept"
+  },
+  "flight": { "speed": 1, "acceleration": 1, "turnRate": 1 },
+  "powers": { "loadout": ["slam", "grab"], "slamRadiusScale": 1, "throwSpeedScale": 1, "grabMassScale": 1 }
+}

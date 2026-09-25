@@ -1,0 +1,215 @@
+{
+  "$notes": {
+    "about": "The hero pose library, shared by every hero and by the Godot port (web/src/core/hero-pose-graph.ts, godot/core/hero_pose_graph.gd). Rotations are Euler XYZ radians, local to each joint's parent, in the rig's bind pose: standing, facing +Z, +X on the hero's left, limbs hanging along -Y. The body joint is the navel pivot: x = pi/2 lays the figure flat to fly (head forward, chest down).",
+    "conventions": "Elbows flex with negative x, knees with positive x, hips swing the thigh forward with negative x. Left clavicle lifts with +z, right with -z; left fingers curl with -z. Hand shapes are authored for the left hand; the right hand mirrors them (x, -y, -z).",
+    "hands": "Finger-group and thumb rotations for each hand shape",
+    "poses": "full: true = joints left out sit at rest; full: false (upper-body poses) = joints left out follow the flight poses. offset = shift of the body pivot in metres for the 1.86 m reference hero. handL / handR pick a hand shape (full poses default to open)",
+    "graph": "How the graph blends and animates",
+    "graph.springs": "dampingRatio 0.8 overshoots about 1.5%; the rest are angular frequencies (rad/s) per joint group: core (body, pelvis, spine), limb (arms, legs), hand (fingers, thumbs), head (neck, head), the body offset and the look angles",
+    "graph.dive": "the dive pose fades in as the nose-down pitch goes from start to full radians",
+    "graph.events": "burst (bursting through a building) and glance (bouncing off one) pulses: duration in seconds; rise and hold as shares of it",
+    "graph.layers": "additive motion: bankLean (spine roll per radian of bank), bankHips (legs swing into the turn), steerDrift (lead arm follows the stick), breathRate rad/s and breathDepth rad (hover), idleSway rad (hover), flutterRate rad/s and flutterDepth rad (legs at boost), bobRate rad/s and bobHeight m (hover)",
+    "graph.look": "head look-at: maxYaw / maxPitch clamp (rad), neckShare = part of the turn the neck takes (the head takes the rest), turnLead = seconds of yaw rate the head looks ahead into a turn",
+    "graph.actions": "which pose each power phase shows and at what weight (null = none); M7's power state machines set the phases"
+  },
+  "hands": {
+    "fist": { "fingers": [0, 0, -1.72], "thumb": [0.35, -0.55, -0.7] },
+    "open": { "fingers": [0, 0, -0.12], "thumb": [0, 0.2, 0.15] },
+    "grip": { "fingers": [0, 0, -0.95], "thumb": [0.2, -0.3, -0.35] }
+  },
+  "poses": {
+    "hover": {
+      "full": true,
+      "joints": {
+        "spine2": [-0.02, 0, 0], "chest": [-0.03, 0, 0], "neck": [0.05, 0, 0], "head": [0.07, 0, 0],
+        "shoulderL": [0.18, 0, 0.72], "elbowL": [0, 0, -1.5], "wristL": [0, 0, -0.3],
+        "shoulderR": [0.18, 0, -0.72], "elbowR": [0, 0, 1.5], "wristR": [0, 0, 0.3],
+        "hipL": [-0.05, 0, 0.07], "hipR": [-0.45, 0, -0.06],
+        "kneeL": [0.1, 0, 0], "kneeR": [0.85, 0, 0],
+        "ankleL": [0.35, 0, 0], "ankleR": [0.45, 0, 0]
+      },
+      "handL": "fist", "handR": "fist"
+    },
+    "cruise": {
+      "full": true,
+      "joints": {
+        "body": [1.5708, 0, 0],
+        "spine": [0.04, 0, 0], "spine2": [-0.03, 0, 0], "chest": [-0.04, 0, 0], "neck": [-0.45, 0, 0], "head": [-0.32, 0, 0],
+        "clavicleR": [0, 0, -0.16],
+        "shoulderR": [-2.9, 0, 0.12], "elbowR": [-0.08, 0, 0],
+        "shoulderL": [-0.2, 0, 0.22], "elbowL": [-0.35, 0, 0], "wristL": [0.2, 0, 0],
+        "hipL": [0.05, 0, 0.05], "hipR": [-0.03, 0, -0.05],
+        "kneeL": [0.42, 0, 0], "kneeR": [0.12, 0, 0],
+        "ankleL": [0.9, 0, 0], "ankleR": [0.85, 0, 0]
+      },
+      "handL": "grip", "handR": "fist"
+    },
+    "boost": {
+      "full": true,
+      "joints": {
+        "body": [1.5708, 0, 0],
+        "spine": [0.02, 0, 0], "neck": [-0.5, 0, 0], "head": [-0.35, 0, 0],
+        "clavicleL": [0, 0, 0.18], "clavicleR": [0, 0, -0.18],
+        "shoulderL": [-2.95, 0, -0.2], "elbowL": [-0.05, 0, 0],
+        "shoulderR": [-2.95, 0, 0.2], "elbowR": [-0.05, 0, 0],
+        "hipL": [0.04, 0, -0.02], "hipR": [0.04, 0, 0.02],
+        "kneeL": [0.15, 0, 0], "kneeR": [0.12, 0, 0],
+        "ankleL": [1.0, 0, 0], "ankleR": [1.0, 0, 0]
+      },
+      "handL": "fist", "handR": "fist"
+    },
+    "dive": {
+      "full": true,
+      "joints": {
+        "body": [1.5708, 0, 0],
+        "spine": [-0.04, 0, 0], "spine2": [-0.04, 0, 0], "neck": [-0.6, 0, 0], "head": [-0.35, 0, 0],
+        "clavicleL": [0, -0.12, 0], "clavicleR": [0, 0.12, 0],
+        "shoulderL": [0.3, 0, 0.2], "elbowL": [-0.1, 0, 0], "wristL": [0.3, 0, 0],
+        "shoulderR": [0.3, 0, -0.2], "elbowR": [-0.1, 0, 0], "wristR": [0.3, 0, 0],
+        "hipL": [0.02, 0, 0.02], "hipR": [0.02, 0, -0.02],
+        "kneeL": [0.08, 0, 0], "kneeR": [0.08, 0, 0],
+        "ankleL": [1.1, 0, 0], "ankleR": [1.1, 0, 0]
+      },
+      "handL": "open", "handR": "open"
+    },
+    "brake": {
+      "full": true,
+      "joints": {
+        "body": [0.35, 0, 0],
+        "spine": [-0.12, 0, 0], "spine2": [-0.08, 0, 0], "neck": [0.08, 0, 0], "head": [0.1, 0, 0],
+        "clavicleL": [0, 0, 0.12], "clavicleR": [0, 0, -0.12],
+        "shoulderL": [-1.0, 0, 0.72], "elbowL": [-0.7, 0, 0], "wristL": [0.5, 0, 0.2],
+        "shoulderR": [-1.0, 0, -0.72], "elbowR": [-0.7, 0, 0], "wristR": [0.5, 0, -0.2],
+        "hipL": [-0.7, 0, 0.1], "hipR": [-0.45, 0, -0.1],
+        "kneeL": [0.8, 0, 0], "kneeR": [0.6, 0, 0],
+        "ankleL": [0.2, 0, 0], "ankleR": [0.25, 0, 0]
+      },
+      "handL": "open", "handR": "open"
+    },
+    "burst": {
+      "full": true,
+      "joints": {
+        "body": [1.5708, 0, 0],
+        "spine": [0, 0, -0.2], "spine2": [0, 0, -0.15], "chest": [0, 0, -0.15],
+        "neck": [-0.3, 0, 0.2], "head": [-0.2, 0.25, 0],
+        "clavicleR": [0, 0.2, -0.1],
+        "shoulderR": [-1.3, 0, 0.35], "elbowR": [-2.0, 0, 0],
+        "shoulderL": [0.3, 0, 0.1], "elbowL": [-0.2, 0, 0],
+        "hipL": [0.1, 0, 0.08], "hipR": [-0.05, 0, 0],
+        "kneeL": [0.6, 0, 0], "kneeR": [0.25, 0, 0],
+        "ankleL": [0.9, 0, 0], "ankleR": [0.9, 0, 0]
+      },
+      "handL": "fist", "handR": "fist"
+    },
+    "glance": {
+      "full": true,
+      "joints": {
+        "body": [1.2, 0, 0],
+        "spine": [-0.1, 0, 0], "chest": [0.1, 0, 0], "neck": [0.15, 0, 0], "head": [0.15, 0, 0],
+        "shoulderL": [-1.7, 0, -0.35], "elbowL": [-1.6, 0, 0],
+        "shoulderR": [-1.7, 0, 0.35], "elbowR": [-1.6, 0, 0],
+        "hipL": [-0.9, 0, 0.05], "hipR": [-0.6, 0, -0.05],
+        "kneeL": [1.3, 0, 0], "kneeR": [1.1, 0, 0],
+        "ankleL": [0.4, 0, 0], "ankleR": [0.4, 0, 0]
+      },
+      "handL": "fist", "handR": "fist"
+    },
+    "slamWindup": {
+      "full": true,
+      "joints": {
+        "body": [0.25, 0, 0],
+        "spine": [-0.15, 0, 0], "spine2": [-0.1, 0, 0], "chest": [-0.05, 0, 0], "neck": [-0.1, 0, 0], "head": [-0.15, 0, 0],
+        "clavicleL": [0, 0, 0.2], "clavicleR": [0, 0, -0.2],
+        "shoulderL": [-2.7, 0, -0.25], "elbowL": [-0.9, 0, 0],
+        "shoulderR": [-2.7, 0, 0.25], "elbowR": [-0.9, 0, 0],
+        "hipL": [-1.2, 0, 0.12], "hipR": [-1.0, 0, -0.12],
+        "kneeL": [1.7, 0, 0], "kneeR": [1.6, 0, 0],
+        "ankleL": [0.5, 0, 0], "ankleR": [0.5, 0, 0]
+      },
+      "handL": "fist", "handR": "fist"
+    },
+    "slamLand": {
+      "full": true,
+      "joints": {
+        "spine": [0.42, 0, 0], "spine2": [0.33, 0, 0], "chest": [0.2, 0, 0], "neck": [-0.55, 0, 0], "head": [-0.3, 0, 0],
+        "clavicleR": [0, 0, 0.22],
+        "shoulderR": [-0.98, 0, 0.1], "elbowR": [-0.08, 0, 0], "wristR": [-0.2, 0, 0],
+        "shoulderL": [0.5, 0, 1.05], "elbowL": [-0.4, 0, 0], "wristL": [0.3, 0, 0],
+        "hipL": [-1.55, 0, 0.14], "kneeL": [1.6, 0, 0], "ankleL": [0, 0, 0],
+        "hipR": [0.3, 0, -0.1], "kneeR": [1.27, 0, 0], "ankleR": [0.6, 0, 0]
+      },
+      "offset": [0, -0.44, 0],
+      "handL": "open", "handR": "fist"
+    },
+    "grabReach": {
+      "full": false,
+      "joints": {
+        "spine2": [0.1, 0, 0], "chest": [0.05, 0, 0],
+        "clavicleL": [0, -0.15, 0.1], "clavicleR": [0, 0.15, -0.1],
+        "shoulderL": [-1.55, 0, 0.25], "elbowL": [-0.15, 0, 0], "wristL": [0.1, 0, 0.2],
+        "shoulderR": [-1.55, 0, -0.25], "elbowR": [-0.15, 0, 0], "wristR": [0.1, 0, -0.2]
+      },
+      "handL": "open", "handR": "open"
+    },
+    "hold": {
+      "full": false,
+      "joints": {
+        "spine2": [-0.08, 0, 0], "chest": [-0.06, 0, 0],
+        "clavicleL": [0, 0, 0.25], "clavicleR": [0, 0, -0.25],
+        "shoulderL": [-2.85, 0, 0.35], "elbowL": [-0.45, 0, 0], "wristL": [0.3, 0, 0],
+        "shoulderR": [-2.85, 0, -0.35], "elbowR": [-0.45, 0, 0], "wristR": [0.3, 0, 0]
+      },
+      "handL": "grip", "handR": "grip"
+    },
+    "throwWindup": {
+      "full": false,
+      "joints": {
+        "spine2": [0, -0.25, 0], "chest": [-0.1, -0.3, 0],
+        "clavicleR": [0, 0, -0.2],
+        "shoulderR": [-2.5, 0, -0.5], "elbowR": [-1.9, 0, 0],
+        "shoulderL": [-1.5, 0, 0.3], "elbowL": [-0.2, 0, 0]
+      },
+      "handL": "open", "handR": "grip"
+    },
+    "throwRelease": {
+      "full": false,
+      "joints": {
+        "spine2": [0.1, 0.25, 0], "chest": [0.1, 0.3, 0],
+        "shoulderR": [-1.45, 0, 0.1], "elbowR": [-0.05, 0, 0], "wristR": [0.3, 0, 0],
+        "shoulderL": [0.4, 0, 0.35], "elbowL": [-0.5, 0, 0]
+      },
+      "handL": "fist", "handR": "open"
+    }
+  },
+  "graph": {
+    "springs": { "dampingRatio": 0.8, "core": 7.5, "limb": 10, "hand": 16, "head": 9, "offset": 8, "look": 6 },
+    "dive": { "start": 0.35, "full": 1.0 },
+    "events": {
+      "burst": { "duration": 0.75, "rise": 0.12, "hold": 0.4 },
+      "glance": { "duration": 0.55, "rise": 0.12, "hold": 0.35 }
+    },
+    "layers": {
+      "bankLean": 0.3, "bankHips": 0.12, "steerDrift": 0.1,
+      "breathRate": 1.9, "breathDepth": 0.03, "idleSway": 0.05,
+      "flutterRate": 17, "flutterDepth": 0.02, "bobRate": 1.6, "bobHeight": 0.045
+    },
+    "look": { "maxYaw": 1.1, "maxPitch": 0.6, "neckShare": 0.4, "turnLead": 0.3 },
+    "actions": {
+      "slam": {
+        "ready": null,
+        "windup": { "pose": "slamWindup", "weight": 1 },
+        "dive": { "pose": "boost", "weight": 1 },
+        "impact": { "pose": "slamLand", "weight": 1 },
+        "recover": { "pose": "slamLand", "weight": 0.55 },
+        "cooldown": null
+      },
+      "grab": {
+        "empty": null,
+        "reaching": { "pose": "grabReach", "weight": 1 },
+        "holding": { "pose": "hold", "weight": 1 },
+        "windup": { "pose": "throwWindup", "weight": 1 },
+        "release": { "pose": "throwRelease", "weight": 1 }
+      }
+    }
+  }
+}
